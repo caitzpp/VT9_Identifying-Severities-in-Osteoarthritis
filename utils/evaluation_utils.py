@@ -15,7 +15,7 @@ def ensemble_results(df, stage, metric, meta_data_dir, get_oarsi_results):
     print('Severe AUC is {}'.format(auc_sev))
 
 
-def print_ensemble_results(path_to_anom_scores, epoch, stage, metric, meta_data_dir, get_oarsi_results, model_name_prefix ):
+def print_ensemble_results(path_to_anom_scores, epoch, stage, metric, meta_data_dir, get_oarsi_results, model_name_prefix, seed = None):
     """
     Prints evaluation results for an ensemble of models based on their anomaly scores.
 
@@ -74,7 +74,8 @@ def print_ensemble_results(path_to_anom_scores, epoch, stage, metric, meta_data_
         files=[]
         for key in epoch.keys():
             files = files + [file for file in files_total if (('epoch_' + str(epoch[key]) ) in file) & ('on_test_set' not in file ) & ('seed_' + str(key) in file) & (model_name_prefix in file) ]
-
+    elif seed is not None:
+        files = [file for file in files_total if (('seed_' + str(seed) ) in file) & ('on_test_set' not in file ) & (model_name_prefix in file)]
     else:
         files = [file for file in files_total if (('epoch_' + str(epoch) ) in file) & ('on_test_set' not in file ) & (model_name_prefix in file)]
 
@@ -86,6 +87,8 @@ def print_ensemble_results(path_to_anom_scores, epoch, stage, metric, meta_data_
         files=[]
         for key in epoch.keys():
             files = files + [file for file in files_total if (('epoch_' + str(epoch[key]) ) in file) & ('on_test_set' in file ) & ('seed_' + str(key) in file) & (model_name_prefix in file)]
+    elif seed is not None:
+        files = [file for file in files_total if (('seed_' + str(seed) ) in file) & ('on_test_set' in file ) & (model_name_prefix in file)]
     else:
         files = [file for file in files_total if (('epoch_' + str(epoch) ) in file) & ('on_test_set' in file ) & (model_name_prefix in file)]
 
