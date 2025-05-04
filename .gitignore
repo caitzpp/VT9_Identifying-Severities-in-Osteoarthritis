@@ -5,7 +5,7 @@ __pycache__/
 
 *.env
 .vscode/
-
+condaenv.zf49i15p.requirements.txt
 
 # C extensions
 *.so
