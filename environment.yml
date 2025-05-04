@@ -97,4 +97,3 @@ dependencies:
       - tifffile==2025.3.30
       - torch==2.7.0
       - tzdata==2025.2
-prefix: C:\Users\TAAZUCA2\AppData\Local\anaconda3\envs\mtenv
