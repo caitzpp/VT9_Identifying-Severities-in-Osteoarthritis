@@ -96,10 +96,10 @@ def print_ensemble_results(path_to_anom_scores, epoch, stage, metric, meta_data_
 def create_scores_dataframe(path_to_anom_scores, files, metric):
     for i,file in enumerate(files):
         if i ==0:
-            df = pd.read_csv(path_to_anom_scores + file)
+            df = pd.read_csv(os.path.join(path_to_anom_scores, file))
             df = df.sort_values(by='id').reset_index(drop=True)[['id','label', metric]]
         else:
-            sc = pd.read_csv(path_to_anom_scores + file)
+            sc = pd.read_csv(os.path.join(path_to_anom_scores, file))
             sc = sc.sort_values(by='id').reset_index(drop=True)[['id','label', metric]]
             df.iloc[:,2:] = df.iloc[:,2:] + sc.iloc[:,2:]
 
