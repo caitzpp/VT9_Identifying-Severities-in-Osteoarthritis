@@ -18,18 +18,19 @@ X_umap = umap.UMAP().fit_transform(X)
 labels = hdbscan.HDBSCAN().fit_predict(X_umap)
 
 # Plot by cluster
-plt.figure(figsize=(10, 8))
-unique_labels = set(labels)
-for label in unique_labels:
-    mask = labels == label
-    plt.scatter(
-        X_umap[mask, 0],
-        X_umap[mask, 1],
-        s=5,
-        label=f"Cluster {label}" if label != -1 else "Noise"
-    )
+fig, axs = plt.subplots(1, 2, figsize=(16, 6))
 
-plt.legend(title="HDBSCAN Clusters")
-plt.title("UMAP Projection with HDBSCAN Clusters")
+# HDBSCAN Clusters
+for label in set(labels):
+    mask = labels == label
+    axs[0].scatter(X_umap[mask, 0], X_umap[mask, 1], s=5, label=f"Cluster {label}")
+axs[0].set_title("HDBSCAN Clusters")
+axs[0].legend()
+
+# Ground Truth Labels
+scatter = axs[1].scatter(X_umap[:, 0], X_umap[:, 1], c=y, cmap="tab10", s=5)
+axs[1].set_title("True Labels")
+fig.colorbar(scatter, ax=axs[1], label="Label")
+
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_PATH, DATA_TYPE + '.png'))
+plt.savefig(os.path.join(SAVE_PATH, DATA_TYPE + '_comparison.png'))
