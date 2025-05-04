@@ -1,6 +1,6 @@
 import os
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 DEBUG = os.getenv("DEBUG", "False")
 
@@ -14,6 +14,6 @@ if SCHULTHESS_DATAFOLDER == "":
 else:
     SCHULTHESS_DATAPATH = os.path.join(DATA_PATH, SCHULTHESS_DATAFOLDER)
 
-CHENETAL_DATAPATH = os.path.join(DATA_PATH, os.getenv("CHENETAL_DATAFOLDER", "kaggle_dataset"))
+CHENETAL_DATAPATH = os.path.join(DATA_PATH, os.getenv("CHENETAL_DATAFOLDER", "kaggle dataset"))
 
 PATH_TO_ANOM = os.path.join(OUTPUT_PATH, "dfs")
