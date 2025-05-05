@@ -17,3 +17,4 @@ else:
 CHENETAL_DATAPATH = os.path.join(DATA_PATH, os.getenv("CHENETAL_DATAFOLDER", "kaggle dataset"))
 
 PATH_TO_ANOM = os.path.join(OUTPUT_PATH, "dfs")
+PATH_TO_RESULTS = os.path.join(OUTPUT_PATH, "results")
