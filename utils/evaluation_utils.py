@@ -5,6 +5,31 @@ from sklearn import metrics
 from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_fscore_support, f1_score, cohen_kappa_score, average_precision_score
 from scipy import stats
 import torch.nn.functional as F
+from scipy.ndimage.filters import uniform_filter1d
+
+def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix):
+    '''
+        find the epoch where the metric value begins to plateau for each file in path_to_centre_dists
+    '''
+    files = os.listdir(path_to_centre_dists)
+    files= [f for f in files if ('on_test_set' not in f) & (model_prefix in f)]
+    best_epochs = {}
+    for i,file in enumerate(files):
+        logs = pd.read_csv(path_to_centre_dists + file)[metric]
+        if len(logs) > 20:
+            seed = file.split('_seed_')[1].split('_')[0]
+            smoothF = uniform_filter1d(logs, size = 20)
+            dist_zero = np.abs(0 - np.gradient(smoothF))
+            if np.where(dist_zero == np.min(dist_zero))[0][0] < 40:
+                minimum = 40
+            else:
+                minimum = np.where(dist_zero == np.min(dist_zero))[0][0]
+            if isinstance(last_epoch, dict):
+                best_epochs[seed] = (minimum * 10 ) + last_epoch[seed]
+            else:
+                best_epochs[seed] = (minimum * 10 ) + last_epoch
+
+    return best_epochs
 
 def ensemble_results(df, stage, metric, meta_data_dir, get_oarsi_results):
 
