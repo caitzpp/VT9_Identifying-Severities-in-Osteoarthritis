@@ -7,17 +7,16 @@ from scipy import stats
 import torch.nn.functional as F
 from scipy.ndimage.filters import uniform_filter1d
 
-def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix, test_data = True):
+def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix, test_data=True):
     '''
-        find the epoch where the metric value begins to plateau for each file in path_to_centre_dists
+    Find the best epoch (by metric value) per seed across multiple files.
     '''
     files = os.listdir(path_to_centre_dists)
+    files = [
+        f for f in files
+        if ('on_test_set' in f if test_data else 'on_test_set' not in f) and model_prefix in f
+    ]
 
-    if test_data == True:
-        files = [f for f in files if ('on_test_set' in f) and (model_prefix in f)]
-    else:
-        files = [f for f in files if ('on_test_set' not in f) and (model_prefix in f)]
-    
     best_epochs = {}
     top_results = []
 
@@ -27,22 +26,24 @@ def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix, test_
             continue
 
         seed = file.split('_seed_')[1].split('_')[0]
-        if metric == 'spearman':
-            best_idx = df[metric].idxmin()  # or idxmin() if lower is better
-        else:
-            best_idx = df[metric].idxmax()  # or idxmin() if lower is better
-        best_epoch_relative = best_idx * 10  # assuming 10-step intervals
-        best_epoch_absolute = best_epoch_relative + (last_epoch[seed] if isinstance(last_epoch, dict) else last_epoch)
+
+        best_idx = df[metric].idxmax()  # or idxmin() for loss
         best_metric = df.loc[best_idx, metric]
-        best_epoch_seed = {
-            'epoch': best_epoch_absolute,
-            str(metric): best_metric,
-        }
+        best_epoch_relative = df.loc[best_idx, 'epoch'] if 'epoch' in df.columns else best_idx * 10
+        best_epoch_absolute = best_epoch_relative + (last_epoch[seed] if isinstance(last_epoch, dict) else last_epoch)
 
-        best_epochs[seed] = best_epoch_seed
-        top_results.append((seed, best_epoch_absolute, best_metric))
+        # If this is the first file for the seed or has a better metric, store it
+        if (seed not in best_epochs) or (best_metric > best_epochs[seed][metric]):
+            best_epochs[seed] = {
+                'epoch': best_epoch_absolute,
+                metric: best_metric,
+            }
 
-    # Sort and print top 10
+    # Build top_results from filtered best_epochs
+    for seed, result in best_epochs.items():
+        top_results.append((seed, result['epoch'], result[metric]))
+
+    # Sort top results by metric descending
     top_results.sort(key=lambda x: x[2], reverse=True)
     print("\nTop 10 results:")
     for seed, epoch, value in top_results[:10]:
