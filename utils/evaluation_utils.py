@@ -7,30 +7,48 @@ from scipy import stats
 import torch.nn.functional as F
 from scipy.ndimage.filters import uniform_filter1d
 
-def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix):
+def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix, test_data = True):
     '''
         find the epoch where the metric value begins to plateau for each file in path_to_centre_dists
     '''
     files = os.listdir(path_to_centre_dists)
-    files= [f for f in files if ('on_test_set' in f) & (model_prefix in f)]
-    best_epochs = {}
-    for i,file in enumerate(files):
-        print(file)
-    #     logs = pd.read_csv(os.path.join(path_to_centre_dists, file))[metric]
-    #     if len(logs) > 20:
-    #         seed = file.split('_seed_')[1].split('_')[0]
-    #         smoothF = uniform_filter1d(logs, size = 20)
-    #         dist_zero = np.abs(0 - np.gradient(smoothF))
-    #         if np.where(dist_zero == np.min(dist_zero))[0][0] < 40:
-    #             minimum = 40
-    #         else:
-    #             minimum = np.where(dist_zero == np.min(dist_zero))[0][0]
-    #         if isinstance(last_epoch, dict):
-    #             best_epochs[seed] = (minimum * 10 ) + last_epoch[seed]
-    #         else:
-    #             best_epochs[seed] = (minimum * 10 ) + last_epoch
 
-    # return best_epochs
+    if test_data == True:
+        files = [f for f in files if ('on_test_set' in f) and (model_prefix in f)]
+    else:
+        files = [f for f in files if ('on_test_set' not in f) and (model_prefix in f)]
+    
+    best_epochs = {}
+    top_results = []
+
+    for file in files:
+        df = pd.read_csv(os.path.join(path_to_centre_dists, file))
+        if len(df) == 0 or metric not in df.columns:
+            continue
+
+        seed = file.split('_seed_')[1].split('_')[0]
+        if metric == 'spearman':
+            best_idx = df[metric].idxmin()  # or idxmin() if lower is better
+        else:
+            best_idx = df[metric].idxmax()  # or idxmin() if lower is better
+        best_epoch_relative = best_idx * 10  # assuming 10-step intervals
+        best_epoch_absolute = best_epoch_relative + (last_epoch[seed] if isinstance(last_epoch, dict) else last_epoch)
+        best_metric = df.loc[best_idx, metric]
+        best_epoch_seed = {
+            'epoch': best_epoch_absolute,
+            str(metric): best_metric,
+        }
+
+        best_epochs[seed] = best_epoch_seed
+        top_results.append((seed, best_epoch_absolute, best_metric))
+
+    # Sort and print top 10
+    top_results.sort(key=lambda x: x[2], reverse=True)
+    print("\nTop 10 results:")
+    for seed, epoch, value in top_results[:10]:
+        print(f"Seed: {seed}, Best Epoch: {epoch}, {metric}: {value:.4f}")
+
+    return best_epochs
 
 def ensemble_results(df, stage, metric, meta_data_dir, get_oarsi_results):
 
