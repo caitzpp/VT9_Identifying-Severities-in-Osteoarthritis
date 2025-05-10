@@ -1,4 +1,4 @@
-from utils.evaluation_utils import calc_mean_std, create_scores_dataframe, get_metrics
+from utils.evaluation_utils import calc_mean_std, create_scores_dataframe, get_metrics, print_ensemble_results_wstd
 import config
 import os
 import pandas as pd
@@ -11,18 +11,21 @@ TRAIN_PLATEAU_EPOCH = 400
 
 MOD_NAME="mod_2"
 metric= 'centre_mean'
+seeds = [1001, 138647, 193, 34, 44]
+
 
 if __name__=="__main__":
     os.makedirs(SAVE_PATH, exist_ok=True)
+    print_ensemble_results_wstd(PATH_TO_ANOM_SCORES, TRAIN_PLATEAU_EPOCH, 'ss', metric, model_name_prefix=MOD_NAME, seeds=seeds )
 
-    files_total = os.listdir(DATA_PATH)
-    #files_total = os.listdir(PATH_TO_ANOM_SCORES)
-    metrics_per_seed = []
+    # files_total = os.listdir(DATA_PATH)
+    # #files_total = os.listdir(PATH_TO_ANOM_SCORES)
+    # metrics_per_seed = []
     
-    files = [file for file in files_total if (('epoch_' + str(TRAIN_PLATEAU_EPOCH) ) in file) & ('on_test_set' in file ) & (MOD_NAME in file)]
+    # files = [file for file in files_total if (('epoch_' + str(TRAIN_PLATEAU_EPOCH) ) in file) & ('on_test_set' in file ) & (MOD_NAME in file)]
 
-    df_all = []
-    for file in files:
+    # df_all = []
+    # for file in files:
     #     df = pd.read_csv(os.path.join(DATA_PATH, file))
     #     df = df[df["Unnamed: 0"]==metric]
     #     df_all.append(df)
@@ -37,14 +40,14 @@ if __name__=="__main__":
     # print(stds)
 
 
-        df = create_scores_dataframe(PATH_TO_ANOM_SCORES, [file], metric)
-        res, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df, metric)
-        metrics_per_seed.append([res, auc, auc_mid, auc_mid2, auc_sev])
+    #     df = create_scores_dataframe(PATH_TO_ANOM_SCORES, [file], metric)
+    #     res, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df, metric)
+    #     metrics_per_seed.append([res, auc, auc_mid, auc_mid2, auc_sev])
 
-    metrics_df = pd.DataFrame(metrics_per_seed, columns=["Spearman", "AUC", "AUC_mid", "AUC_mid2", "AUC_sev"])
+    # metrics_df = pd.DataFrame(metrics_per_seed, columns=["Spearman", "AUC", "AUC_mid", "AUC_mid2", "AUC_sev"])
 
-    mean_metrics = metrics_df.mean()
-    std_metrics = metrics_df.std()
+    # mean_metrics = metrics_df.mean()
+    # std_metrics = metrics_df.std()
 
-    print(f"Mean Metrics: \n{mean_metrics}")
-    print(f"Standard Deviation of Metrics: \n{std_metrics}")
+    # print(f"Mean Metrics: \n{mean_metrics}")
+    # print(f"Standard Deviation of Metrics: \n{std_metrics}")
