@@ -120,8 +120,73 @@ def print_ensemble_results(path_to_anom_scores, epoch, stage, metric, meta_data_
     df = create_scores_dataframe(path_to_anom_scores, files, metric)
     ensemble_results(df, stage, metric, meta_data_dir, get_oarsi_results)
 
+def get_results(path_to_results, epoch, stage, metric, model_name_prefix, seed=None):
+    files_total = os.listdir(path_to_results)
+
+    if isinstance(epoch, dict):
+        files=[]
+        for key in epoch.keys():
+            files = files + [file for file in files_total if (('epoch_' + str(epoch[key]) ) in file) & ('on_test_set' not in file ) & ('seed_' + str(key) in file) & (model_name_prefix in file) ]
+    elif seed is not None:
+        files = [file for file in files_total if (('seed_' + str(seed) ) in file) & ('on_test_set' not in file ) & (model_name_prefix in file)]
+    else:
+        files = [file for file in files_total if (('epoch_' + str(epoch) ) in file) & ('on_test_set' not in file ) & (model_name_prefix in file)]
+
+    #TODO: Function that takes all files and calculates AUC etc + std deviation.
+    
+    means, stdv = calc_mean_std(files, path_to_results, metric)
+
+
+
+
+def calc_mean_std(files, path_to_results, metric):
+    df_all = []
+    for i, file in enumerate(files):
+        sc = pd.read_csv(os.path.join(path_to_results, file))
+        filtered_df = sc[sc['Unnamed: 0']==metric]
+        df_all.append(filtered_df)
+    
+    df = pd.concat(df_all, ignore_index=True)
+    means = df.iloc[:, 1:].mean()
+    stds = df.iloc[:, 1:].std()
+
+    return means, stds
 
 def create_scores_dataframe(path_to_anom_scores, files, metric):
+    """
+    Creates a DataFrame by aggregating metric values (e.g., 'centre_mean') from multiple CSV files.
+
+    This function reads the specified CSV files, each containing anomaly scores, and extracts the
+    'id', 'label', and the specified metric (e.g., 'centre_mean'). It then combines the data from
+    all files, averages the metric values for each 'id' across all files, and returns the resulting
+    DataFrame.
+
+    The returned DataFrame will contain the following columns:
+        - 'id': Unique identifier for each row.
+        - 'label': A binary or categorical label (e.g., 0 or 1).
+        - 'metric': The average value of the specified metric (e.g., 'centre_mean') across all files.
+
+    The function ensures that the data from all files is properly aligned by sorting based on the 'id'
+    column and resetting the index. After the data from each file is aggregated, the metric values are
+    averaged by dividing the sum by the number of files.
+
+    Parameters:
+    ----------
+    path_to_anom_scores : str
+        Path to the directory containing the anomaly score CSV files.
+    
+    files : list of str
+        A list of filenames (strings) corresponding to the CSV files to be processed.
+    
+    metric : str
+        The name of the metric column to aggregate (e.g., 'centre_mean', 'w_centre').
+
+    Returns:
+    -------
+    pd.DataFrame
+        A DataFrame containing the averaged metric values across all files for each 'id'.
+        The DataFrame includes the 'id', 'label', and the averaged 'metric' values.
+    """
     for i,file in enumerate(files):
         if i ==0:
             df = pd.read_csv(os.path.join(path_to_anom_scores, file))
