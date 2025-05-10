@@ -231,100 +231,48 @@ def get_metrics(df, score):
 
     return res[0], auc, auc_mid, auc_mid2, auc_sev
 
-def create_scores_dataframe_wstd(path_to_anom_scores, files, metric):
+def print_ensemble_results_wstd(path_to_anom_scores, epoch, stage, metric, meta_data_dir, get_oarsi_results, model_name_prefix, seed = None):
     """
-    Creates a DataFrame by aggregating and calculating both the mean and standard deviation
-    of the specified metric (e.g., 'centre_mean') from multiple CSV files.
-
-    This function reads the specified CSV files, each containing anomaly scores, and extracts the
-    'id', 'label', and the specified metric (e.g., 'centre_mean'). It then combines the data from
-    all files, calculates both the mean and the standard deviation of the metric values for each
-    'id' across all files, and returns the resulting DataFrame.
-
-    The returned DataFrame will contain the following columns:
-        - 'id': Unique identifier for each row.
-        - 'label': A binary or categorical label (e.g., 0 or 1).
-        - 'mean_<metric>': The average value of the specified metric (e.g., 'centre_mean') across all files.
-        - 'std_<metric>': The standard deviation of the specified metric across all files for each 'id'.
-
-    The function ensures that the data from all files is properly aligned by sorting based on the 'id'
-    column and resetting the index. After the data from each file is aggregated, both the mean and
-    standard deviation of the metric values are computed.
-
-    Parameters:
-    ----------
-    path_to_anom_scores : str
-        Path to the directory containing the anomaly score CSV files.
-    
-    files : list of str
-        A list of filenames (strings) corresponding to the CSV files to be processed.
-    
-    metric : str
-        The name of the metric column to aggregate (e.g., 'centre_mean', 'w_centre').
-
-    Returns:
-    -------
-    pd.DataFrame
-        A DataFrame containing the 'id', 'label', the averaged 'metric' values, and the standard deviation
-        of the 'metric' values across all files.
+    Prints evaluation results for an ensemble of models based on their anomaly scores,
+    and calculates the mean and standard deviation of metrics across all seeds.
     """
-    # Initialize empty lists to store data
-    means_all = []
-    stds_all = []
-    
-    # Loop through the files to accumulate metric values
-    for i, file in enumerate(files):
-        if i == 0:
-            df = pd.read_csv(os.path.join(path_to_anom_scores, file))
-            df = df.sort_values(by='id').reset_index(drop=True)[['id', 'label', metric]]
-        else:
-            sc = pd.read_csv(os.path.join(path_to_anom_scores, file))
-            sc = sc.sort_values(by='id').reset_index(drop=True)[['id', 'label', metric]]
-            df.iloc[:, 2:] = df.iloc[:, 2:] + sc.iloc[:, 2:]
 
-    # Calculate mean and standard deviation across all files
-    df.iloc[:, 2:] = df.iloc[:, 2:] / len(files)
-    
-    # Compute the standard deviation across the files
+    print('---------------------------------------------------- For stage ' + stage + '----------------------------------------------------')
+    print('-----------------------------RESULTS ON UNLABELLED DATA---------------------------')
+    print('Warning: the results on unlabelled data includes the pseudo labels i.e. for stages that are not SSL and severe predictor, the model was trained on the pseudo labels which are also included in the unlabelled results')
+
+    files_total = os.listdir(path_to_anom_scores)
+
+    metrics_per_seed = []  # To store metrics for each seed
+
+    if isinstance(epoch, dict):
+        files = []
+        for key in epoch.keys():
+            files = files + [file for file in files_total if (('epoch_' + str(epoch[key])) in file) & ('on_test_set' not in file) & ('seed_' + str(key) in file) & (model_name_prefix in file)]
+    elif seed is not None:
+        files = [file for file in files_total if (('seed_' + str(seed)) in file) & ('on_test_set' not in file) & (model_name_prefix in file)]
+    else:
+        files = [file for file in files_total if (('epoch_' + str(epoch)) in file) & ('on_test_set' not in file) & (model_name_prefix in file)]
+
+    # Loop over all seeds to calculate metrics
     for file in files:
-        sc = pd.read_csv(os.path.join(path_to_anom_scores, file))
-        sc = sc.sort_values(by='id').reset_index(drop=True)[['id', 'label', metric]]
-        stds_all.append(sc.iloc[:, 2:])
-    
-    # Convert lists of standard deviations into a DataFrame and calculate the mean
-    std_df = pd.concat(stds_all, axis=1)
-    df['std_' + metric] = std_df.std(axis=1)
+        df = create_scores_dataframe(path_to_anom_scores, [file], metric)
+        res, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df, metric)
+        metrics_per_seed.append([res, auc, auc_mid, auc_mid2, auc_sev])
 
-    return df
+    # Convert metrics_per_seed to a DataFrame
+    metrics_df = pd.DataFrame(metrics_per_seed, columns=["Spearman", "AUC", "AUC_mid", "AUC_mid2", "AUC_sev"])
 
-def get_metrics_wstd(df, score):
+    # Calculate the mean and standard deviation for each metric
+    mean_metrics = metrics_df.mean()
+    std_metrics = metrics_df.std()
 
-    res = stats.spearmanr(df[score].tolist(), df['label'].tolist())
+    print(f"Mean Metrics: \n{mean_metrics}")
+    print(f"Standard Deviation of Metrics: \n{std_metrics}")
 
-    df['binary_label'] = 0
-    df.loc[df['label'] > 0, 'binary_label'] = 1
-    fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
-    auc = metrics.auc(fpr, tpr)
-
-
-    df['binary_label'] = 0
-    df.loc[df['label'] > 1, 'binary_label'] = 1
-
-    fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
-    auc_mid = metrics.auc(fpr, tpr)
-
-
-    df['binary_label'] = 0
-    df.loc[df['label'] > 2, 'binary_label'] = 1
-    fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
-    auc_mid2 = metrics.auc(fpr, tpr)
-
-
-    df['binary_label'] = 0
-    df.loc[df['label'] == 4, 'binary_label'] = 1
-    fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
-    auc_sev = metrics.auc(fpr, tpr)
-
-
-
-    return res[0], auc, auc_mid, auc_mid2, auc_sev
+    # Optionally print individual results for better visualization
+    print(f"Spearman correlation mean: {mean_metrics['Spearman']}, std: {std_metrics['Spearman']}")
+    print(f"OA AUC mean: {mean_metrics['AUC']}, std: {std_metrics['AUC']}")
+    print(f"Mid AUC mean: {mean_metrics['AUC_mid']}, std: {std_metrics['AUC_mid']}")
+    print(f"Mid2 AUC mean: {mean_metrics['AUC_mid2']}, std: {std_metrics['AUC_mid2']}")
+    print(f"Severe AUC mean: {mean_metrics['AUC_sev']}, std: {std_metrics['AUC_sev']}")
