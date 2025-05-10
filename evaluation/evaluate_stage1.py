@@ -1,4 +1,4 @@
-from utils.evaluation_utils import calc_mean_std, create_scores_dataframe
+from utils.evaluation_utils import calc_mean_std, create_scores_dataframe, get_metrics
 import config
 import os
 import pandas as pd
@@ -10,20 +10,27 @@ PATH_TO_ANOM_SCORES = os.path.join(config.PATH_TO_ANOM, 'ss')
 TRAIN_PLATEAU_EPOCH = 400
 
 MOD_NAME="mod_2"
+metric= 'centre_mean'
 
 if __name__=="__main__":
     os.makedirs(SAVE_PATH, exist_ok=True)
 
     #files_total = os.listdir(DATA_PATH)
     files_total = os.listdir(PATH_TO_ANOM_SCORES)
+    metrics_per_seed = []
 
 
     files = [file for file in files_total if (('epoch_' + str(TRAIN_PLATEAU_EPOCH) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file)]
     
-    #df = pd.read_csv(os.path.join(DATA_PATH, files[0]))
-    # print(df.head())
-    df = create_scores_dataframe(PATH_TO_ANOM_SCORES, files, 'centre_mean')
-    print(df.head())
-    # means, stds = calc_mean_std(files, DATA_PATH, 'centre_mean')
-    # print(means)
-    
+    for file in files:
+        df = create_scores_dataframe(PATH_TO_ANOM_SCORES, [file], metric)
+        res, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df, metric)
+        metrics_per_seed.append([res, auc, auc_mid, auc_mid2, auc_sev])
+
+    metrics_df = pd.DataFrame(metrics_per_seed, columns=["Spearman", "AUC", "AUC_mid", "AUC_mid2", "AUC_sev"])
+
+    mean_metrics = metrics_df.mean()
+    std_metrics = metrics_df.std()
+
+    print(f"Mean Metrics: \n{mean_metrics}")
+    print(f"Standard Deviation of Metrics: \n{std_metrics}")

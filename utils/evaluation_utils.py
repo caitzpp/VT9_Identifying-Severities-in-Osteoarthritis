@@ -133,7 +133,7 @@ def get_results(path_to_results, epoch, stage, metric, model_name_prefix, seed=N
         files = [file for file in files_total if (('epoch_' + str(epoch) ) in file) & ('on_test_set' not in file ) & (model_name_prefix in file)]
 
     #TODO: Function that takes all files and calculates AUC etc + std deviation.
-    
+
     means, stdv = calc_mean_std(files, path_to_results, metric)
 
 
@@ -200,6 +200,104 @@ def create_scores_dataframe(path_to_anom_scores, files, metric):
     return df
 
 def get_metrics(df, score):
+
+    res = stats.spearmanr(df[score].tolist(), df['label'].tolist())
+
+    df['binary_label'] = 0
+    df.loc[df['label'] > 0, 'binary_label'] = 1
+    fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
+    auc = metrics.auc(fpr, tpr)
+
+
+    df['binary_label'] = 0
+    df.loc[df['label'] > 1, 'binary_label'] = 1
+
+    fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
+    auc_mid = metrics.auc(fpr, tpr)
+
+
+    df['binary_label'] = 0
+    df.loc[df['label'] > 2, 'binary_label'] = 1
+    fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
+    auc_mid2 = metrics.auc(fpr, tpr)
+
+
+    df['binary_label'] = 0
+    df.loc[df['label'] == 4, 'binary_label'] = 1
+    fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
+    auc_sev = metrics.auc(fpr, tpr)
+
+
+
+    return res[0], auc, auc_mid, auc_mid2, auc_sev
+
+def create_scores_dataframe_wstd(path_to_anom_scores, files, metric):
+    """
+    Creates a DataFrame by aggregating and calculating both the mean and standard deviation
+    of the specified metric (e.g., 'centre_mean') from multiple CSV files.
+
+    This function reads the specified CSV files, each containing anomaly scores, and extracts the
+    'id', 'label', and the specified metric (e.g., 'centre_mean'). It then combines the data from
+    all files, calculates both the mean and the standard deviation of the metric values for each
+    'id' across all files, and returns the resulting DataFrame.
+
+    The returned DataFrame will contain the following columns:
+        - 'id': Unique identifier for each row.
+        - 'label': A binary or categorical label (e.g., 0 or 1).
+        - 'mean_<metric>': The average value of the specified metric (e.g., 'centre_mean') across all files.
+        - 'std_<metric>': The standard deviation of the specified metric across all files for each 'id'.
+
+    The function ensures that the data from all files is properly aligned by sorting based on the 'id'
+    column and resetting the index. After the data from each file is aggregated, both the mean and
+    standard deviation of the metric values are computed.
+
+    Parameters:
+    ----------
+    path_to_anom_scores : str
+        Path to the directory containing the anomaly score CSV files.
+    
+    files : list of str
+        A list of filenames (strings) corresponding to the CSV files to be processed.
+    
+    metric : str
+        The name of the metric column to aggregate (e.g., 'centre_mean', 'w_centre').
+
+    Returns:
+    -------
+    pd.DataFrame
+        A DataFrame containing the 'id', 'label', the averaged 'metric' values, and the standard deviation
+        of the 'metric' values across all files.
+    """
+    # Initialize empty lists to store data
+    means_all = []
+    stds_all = []
+    
+    # Loop through the files to accumulate metric values
+    for i, file in enumerate(files):
+        if i == 0:
+            df = pd.read_csv(os.path.join(path_to_anom_scores, file))
+            df = df.sort_values(by='id').reset_index(drop=True)[['id', 'label', metric]]
+        else:
+            sc = pd.read_csv(os.path.join(path_to_anom_scores, file))
+            sc = sc.sort_values(by='id').reset_index(drop=True)[['id', 'label', metric]]
+            df.iloc[:, 2:] = df.iloc[:, 2:] + sc.iloc[:, 2:]
+
+    # Calculate mean and standard deviation across all files
+    df.iloc[:, 2:] = df.iloc[:, 2:] / len(files)
+    
+    # Compute the standard deviation across the files
+    for file in files:
+        sc = pd.read_csv(os.path.join(path_to_anom_scores, file))
+        sc = sc.sort_values(by='id').reset_index(drop=True)[['id', 'label', metric]]
+        stds_all.append(sc.iloc[:, 2:])
+    
+    # Convert lists of standard deviations into a DataFrame and calculate the mean
+    std_df = pd.concat(stds_all, axis=1)
+    df['std_' + metric] = std_df.std(axis=1)
+
+    return df
+
+def get_metrics_wstd(df, score):
 
     res = stats.spearmanr(df[score].tolist(), df['label'].tolist())
 
