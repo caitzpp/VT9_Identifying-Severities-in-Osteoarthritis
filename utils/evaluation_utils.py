@@ -137,8 +137,6 @@ def get_results(path_to_results, epoch, stage, metric, model_name_prefix, seed=N
     means, stdv = calc_mean_std(files, path_to_results, metric)
 
 
-
-
 def calc_mean_std(files, path_to_results, metric):
     df_all = []
     for i, file in enumerate(files):
@@ -231,56 +229,3 @@ def get_metrics(df, score):
 
     return res[0], auc, auc_mid, auc_mid2, auc_sev
 
-def print_ensemble_results_wstd(path_to_anom_scores, epoch, stage, metric, model_name_prefix, seeds = None, seed = None):
-    """
-    Prints evaluation results for an ensemble of models based on their anomaly scores,
-    and calculates the mean and standard deviation of metrics across all seeds.
-
-    This function can now handle a list of seeds and calculate the mean/std of metrics across them.
-    """
-    print('---------------------------------------------------- For stage ' + stage + '----------------------------------------------------')
-    print('-----------------------------RESULTS ON UNLABELLED DATA---------------------------')
-    print('Warning: the results on unlabelled data includes the pseudo labels i.e. for stages that are not SSL and severe predictor, the model was trained on the pseudo labels which are also included in the unlabelled results')
-
-    files_total = os.listdir(path_to_anom_scores)
-
-    metrics_per_seed = []  # To store metrics for each seed
-
-    # If seeds are provided as a list, iterate over each one
-    if seeds is not None:
-        files = []
-        for seed in seeds:
-            files += [file for file in files_total if (('seed_' + str(seed)) in file) & ('on_test_set' in file) & (model_name_prefix in file)]
-    else:
-        # Handle case for single seed or other scenarios
-        if isinstance(epoch, dict):
-            files = []
-            for key in epoch.keys():
-                files = files + [file for file in files_total if (('epoch_' + str(epoch[key])) in file) & ('on_test_set' not in file) & ('seed_' + str(key) in file) & (model_name_prefix in file)]
-        elif seed is not None:
-            files = [file for file in files_total if (('seed_' + str(seed)) in file) & ('on_test_set' not in file) & (model_name_prefix in file)]
-        else:
-            files = [file for file in files_total if (('epoch_' + str(epoch)) in file) & ('on_test_set' not in file) & (model_name_prefix in file)]
-
-    # Loop over all files (corresponding to seeds) to calculate metrics
-    for file in files:
-        df = create_scores_dataframe(path_to_anom_scores, [file], metric)
-        res, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df, metric)
-        metrics_per_seed.append([res, auc, auc_mid, auc_mid2, auc_sev])
-
-    # Convert metrics_per_seed to a DataFrame
-    metrics_df = pd.DataFrame(metrics_per_seed, columns=["Spearman", "AUC", "AUC_mid", "AUC_mid2", "AUC_sev"])
-
-    # Calculate the mean and standard deviation for each metric
-    mean_metrics = metrics_df.mean()
-    std_metrics = metrics_df.std()
-
-    print(f"Mean Metrics: \n{mean_metrics}")
-    print(f"Standard Deviation of Metrics: \n{std_metrics}")
-
-    # Optionally print individual results for better visualization
-    print(f"Spearman correlation mean: {mean_metrics['Spearman']}, std: {std_metrics['Spearman']}")
-    print(f"OA AUC mean: {mean_metrics['AUC']}, std: {std_metrics['AUC']}")
-    print(f"Mid AUC mean: {mean_metrics['AUC_mid']}, std: {std_metrics['AUC_mid']}")
-    print(f"Mid2 AUC mean: {mean_metrics['AUC_mid2']}, std: {std_metrics['AUC_mid2']}")
-    print(f"Severe AUC mean: {mean_metrics['AUC_sev']}, std: {std_metrics['AUC_sev']}")
