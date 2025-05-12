@@ -5,11 +5,11 @@ import numpy as np
 
 STAGE = 'ss'
 EPOCH = 400
-MOD_PREFIX = 'mod_2'
-on_test_set = False
+MOD_PREFIX = 'mod_st'
+on_test_set = True
 metric = 'centre_mean'
-margin = 1.130199999
-meta_data = "meta"
+margin = 0.8
+meta_data = "meta2"
 
 PATH_TO_ANOMS = config.PATH_TO_ANOM #dfs path
 SAVE_PATH = config.OUTPUT_PATH
@@ -66,7 +66,10 @@ if __name__=="__main__":
                 df.loc[i, f'anom_{seed}']=1
                 df.loc[i, f'anoms_count']+=1
     df['id'] = df['id'].apply(lambda x: x.split('/')[-2] + '/' + x.split('/')[-1])
-    sim = pd.read_csv(os.path.join(sim_path, "sim_scores.csv"), index_col=False)
+    if on_test_set == True:
+        sim = pd.read_csv(os.path.join(sim_path, "sim_scores_test.csv"), index_col=False)
+    else:
+        sim = pd.read_csv(os.path.join(sim_path, "sim_scores.csv"), index_col=False)
     sim = sim.iloc[:, 2:]
     sim['id'] = sim['id'].apply(lambda x: x.split('/')[-2] + '/' + x.split('/')[-1] )
     df = df.merge(sim,on='id', how='left')
