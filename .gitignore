@@ -7,6 +7,7 @@ __pycache__/
 .vscode/
 condaenv.zf49i15p.requirements.txt
 
+data/
 outputs/
 
 # C extensions

@@ -13,3 +13,6 @@ def load_image_folder_as_array(folder, image_size=(64, 64)):
                 X.append(np.array(img).flatten())  # Flatten to vector
                 y.append(int(label))
     return np.array(X), np.array(y)
+
+def load_image(img):
+    return Image.open(img)
