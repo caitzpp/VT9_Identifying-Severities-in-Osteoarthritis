@@ -10,6 +10,7 @@ dependencies:
   - pip
   - scikit-learn
   - umap-learn
+  - dotenv
   - pip:
       - matplotlib
       - seaborn
