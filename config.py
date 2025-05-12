@@ -18,3 +18,4 @@ CHENETAL_DATAPATH = os.path.join(DATA_PATH, os.getenv("CHENETAL_DATAFOLDER", "ka
 
 PATH_TO_ANOM = os.path.join(os.getenv("RESULTS_PATH"), "dfs")
 PATH_TO_RESULTS = os.path.join(os.getenv("RESULTS_PATH"), "results")
+DIR_PATH = os.getenv("DIR_PATH", "./SS-FewSOME_Disease_Severity_Knee_Osteoarthritis")
