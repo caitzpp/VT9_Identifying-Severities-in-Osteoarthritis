@@ -7,7 +7,7 @@ import sys
 
 STAGE = 'stage2'
 MOD_PREFIX = 'mod_st'
-on_test_set = False
+on_test_set = True
 meta_data = "meta2"
 margin = 0.8
 margin_file = '0.7887399999988859'
@@ -85,7 +85,11 @@ if __name__=="__main__":
                 df.loc[i, f'anom_{seed}']=1
                 df.loc[i, f'anoms_count']+=1
     df['id'] = df['id'].apply(lambda x: x.split('/')[-2] + '/' + x.split('/')[-1])
-    sim = pd.read_csv(os.path.join(sim_path, "sim_scores.csv"), index_col=False)
+
+    if on_test_set==True:
+        sim = pd.read_csv(os.path.join(sim_path, "sim_scores_test.csv"), index_col=False)
+    else:
+        sim = pd.read_csv(os.path.join(sim_path, "sim_scores.csv"), index_col=False)
     sim = sim.iloc[:, 2:]
     sim['id'] = sim['id'].apply(lambda x: x.split('/')[-2] + '/' + x.split('/')[-1] )
     df = df.merge(sim,on='id', how='left')
