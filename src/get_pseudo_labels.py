@@ -3,12 +3,14 @@ import os
 import pandas as pd
 import numpy as np
 import json
+import sys
 
 STAGE = 'stage2'
-MOD_PREFIX = 'mod_2'
+MOD_PREFIX = 'mod_st'
 on_test_set = False
-meta_data = "meta"
+meta_data = "meta2"
 margin = 0.8
+margin_file = '0.7887399999988859'
 
 PATH_TO_ANOMS = config.PATH_TO_ANOM #dfs path
 SAVE_PATH = config.OUTPUT_PATH
@@ -35,16 +37,16 @@ if __name__=="__main__":
         if isinstance(EPOCH, dict):
             files = []
             for key in EPOCH.keys():
-                files = files + [f for f in files_total if ( ('epoch_' + str(EPOCH[key]) in f) & ('seed_' + str(key) in f) & ('on_test_set_' in f)  &  (MOD_PREFIX in f)  ) ]
+                files = files + [f for f in files_total if ( ('epoch_' + str(EPOCH[key]) in f) & ('seed_' + str(key) in f) & ('on_test_set_' in f)  &  (MOD_PREFIX in f) & (margin_file in f) ) ]
         else:
-            files = [f for f in files_total if ( ('epoch_' + str(EPOCH) in f) &  ('on_test_set_' in f)  &  (MOD_PREFIX in f)  ) ]
+            files = [f for f in files_total if ( ('epoch_' + str(EPOCH) in f) &  ('on_test_set_' in f)  &  (MOD_PREFIX in f) & (margin_file in f)  ) ]
     else:
         if isinstance(EPOCH, dict):
             files = []
             for key in EPOCH.keys():
-                files = files + [f for f in files_total if ( ('epoch_' + str(EPOCH[key]) in f) & ('seed_' + str(key) in f) & ('on_test_set_' not in f)  &  (MOD_PREFIX in f)  ) ]
+                files = files + [f for f in files_total if ( ('epoch_' + str(EPOCH[key]) in f) & ('seed_' + str(key) in f) & ('on_test_set_' not in f)  &  (MOD_PREFIX in f) & (margin_file in f)  ) ]
         else:
-            files = [f for f in files_total if ( ('epoch_' + str(EPOCH) in f) &  ('on_test_set_' not in f)  &  (MOD_PREFIX in f)  ) ]
+            files = [f for f in files_total if ( ('epoch_' + str(EPOCH) in f) &  ('on_test_set_' not in f)  &  (MOD_PREFIX in f) & (margin_file in f)  ) ]
     for i,seed in enumerate(seeds):
 
         for file in files:
@@ -74,11 +76,12 @@ if __name__=="__main__":
         df[f'anom_{seed}'] = 0
 
     df["anoms_count"]= 0
+    max = float(np.max(df['av']))
     for i in range(len(df)):
         for j in range(len(seeds)):
             seed = seeds[j]
-
-            if df[f'col_{seed}'].iloc[i] > (margin * np.max(df['av'])): #here using the average over the entire train df
+            col_value = df[f'col_{seed}'].iloc[i]
+            if col_value > float((margin * max)): #here using the average over the entire train df
                 df.loc[i, f'anom_{seed}']=1
                 df.loc[i, f'anoms_count']+=1
     df['id'] = df['id'].apply(lambda x: x.split('/')[-2] + '/' + x.split('/')[-1])
