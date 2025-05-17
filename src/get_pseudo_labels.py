@@ -5,12 +5,12 @@ import numpy as np
 import json
 import sys
 
-STAGE = 'stage2'
+STAGE = 'stage3'
 MOD_PREFIX = 'mod_st'
-on_test_set = True
+on_test_set = False
 meta_data = "meta2"
 margin = 0.8
-margin_file = '0.7887399999988859'
+margin_file = '1.0927999999999678'
 
 PATH_TO_ANOMS = config.PATH_TO_ANOM #dfs path
 SAVE_PATH = config.OUTPUT_PATH

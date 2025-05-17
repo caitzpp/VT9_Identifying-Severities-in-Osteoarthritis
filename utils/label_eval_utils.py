@@ -27,7 +27,7 @@ def boxplot(df, x = 'label', x_title = 'KL Score', y = 'anoms_count', y_title = 
     plt.figure(figsize=(8, 6))
     sns.boxplot(x=x, y=y, data=df)
     if title is not None:
-        plt.title('Box Plot: Distribution of Anoms Count by Label')
+        plt.title(title)
     plt.xlabel(x_title)
     plt.ylabel(y_title)
     plt.show()
@@ -39,7 +39,7 @@ def pairplot(df, values = ['label', 'anoms_count', 'sim', 'av'], hue = None, tit
         sns.pairplot(df[values], hue=hue, palette='viridis')
     sns.pairplot(df[values])
     if title is not None:
-        plt.title('Box Plot: Distribution of Anoms Count by Label')
+        plt.title(title)
     plt.show()
     if save_path is not None:
         plt.savefig(save_path)
