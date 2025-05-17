@@ -85,8 +85,12 @@ if __name__=="__main__":
                 df.loc[i, f'anom_{seed}']=1
                 df.loc[i, f'anoms_count']+=1
     df['id'] = df['id'].apply(lambda x: x.split('/')[-2] + '/' + x.split('/')[-1])
+<<<<<<< HEAD
 
     if on_test_set==True:
+=======
+    if on_test_set == True:
+>>>>>>> 9d27858076f2e2184ce4d0584f46c4107a1ee97a
         sim = pd.read_csv(os.path.join(sim_path, "sim_scores_test.csv"), index_col=False)
     else:
         sim = pd.read_csv(os.path.join(sim_path, "sim_scores.csv"), index_col=False)
