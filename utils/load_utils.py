@@ -13,3 +13,21 @@ def load_image_folder_as_array(folder, image_size=(64, 64)):
                 X.append(np.array(img).flatten())  # Flatten to vector
                 y.append(int(label))
     return np.array(X), np.array(y)
+
+def load_npy_folder_as_array(folder, flatten=True):
+    X = []
+    y = []
+
+    for label_folder in sorted(Path(folder).iterdir()):
+        if label_folder.is_dir():
+            label = label_folder.name
+            for npy_path in label_folder.glob("*.npy"):
+                arr = np.load(npy_path)
+
+                if flatten:
+                    arr = arr.flatten()
+
+                X.append(arr)
+                y.append(int(label))
+
+    return np.array(X), np.array(y)
