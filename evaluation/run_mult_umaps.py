@@ -18,7 +18,7 @@ SAVE_PATH   = os.path.join(config.OUTPUT_PATH, "UMAP", "img")
 UMAP_PARAMS = {
     'n_neighbors': 5,
     'metric':      'cosine',
-    'min_dist':    0.01,
+    'min_dist':    0.5,
     'random_state': int(SEED)
 }
 colors = [
@@ -141,113 +141,113 @@ if __name__ == "__main__":
     plt.savefig(os.path.join(SAVE_PATH, outname), dpi=150)
     plt.close(fig)
 
-    labels = [0, 1, 2, 3, 4]
+    # labels = [0, 1, 2, 3, 4]
 
-    for lab in labels:
-        fig, axes = plt.subplots(
-            nrows=len(MODELS),
-            ncols=2,
-            figsize=(14, 12),
-            sharex=True,
-            sharey=True
-        )
-        fig.suptitle(f"UMAP – KL-Score {lab}", fontsize=18, y=0.92)
+    # for lab in labels:
+    #     fig, axes = plt.subplots(
+    #         nrows=len(MODELS),
+    #         ncols=2,
+    #         figsize=(14, 12),
+    #         sharex=True,
+    #         sharey=True
+    #     )
+    #     fig.suptitle(f"UMAP – KL-Score {lab}", fontsize=18, y=0.92)
         
-        for i, model_name in enumerate(MODELS):
-            for j, on_test in enumerate((False, True)):
-                ax = axes[i, j]
-                X_umap, y = embeddings[(model_name, on_test)]
+    #     for i, model_name in enumerate(MODELS):
+    #         for j, on_test in enumerate((False, True)):
+    #             ax = axes[i, j]
+    #             X_umap, y = embeddings[(model_name, on_test)]
 
-                ax.scatter(
-                    X_umap[:, 0],
-                    X_umap[:, 1],
-                    s=20,
-                    color='lightgray',
-                    alpha=0.4,
-                    edgecolor='none'
-                )
+    #             ax.scatter(
+    #                 X_umap[:, 0],
+    #                 X_umap[:, 1],
+    #                 s=20,
+    #                 color='lightgray',
+    #                 alpha=0.4,
+    #                 edgecolor='none'
+    #             )
 
-                # only plot the points of this class
-                mask = (y == lab)
-                ax.scatter(
-                    X_umap[mask, 0],
-                    X_umap[mask, 1],
-                    s=30,
-                    alpha=0.8,
-                    edgecolor='k',
-                    linewidth=0.3,
-                    color=cmap5(int(lab)),
-                    label=f"KL Score {lab}"
-                )
+    #             # only plot the points of this class
+    #             mask = (y == lab)
+    #             ax.scatter(
+    #                 X_umap[mask, 0],
+    #                 X_umap[mask, 1],
+    #                 s=30,
+    #                 alpha=0.8,
+    #                 edgecolor='k',
+    #                 linewidth=0.3,
+    #                 color=cmap5(int(lab)),
+    #                 label=f"KL Score {lab}"
+    #             )
 
-                # set identical limits
-                ax.set_xlim(min_x-1, max_x+1)
-                ax.set_ylim(min_y-1, max_y+1)
+    #             # set identical limits
+    #             ax.set_xlim(min_x-1, max_x+1)
+    #             ax.set_ylim(min_y-1, max_y+1)
 
-                # keep axes visible
-                ax.set_xlabel("UMAP 1")
-                ax.set_ylabel("UMAP 2")
-                ax.tick_params(direction='in', length=6, width=1)
-                ax.set_title(f"{model_name} — {'Test' if on_test else 'Train'}")
+    #             # keep axes visible
+    #             ax.set_xlabel("UMAP 1")
+    #             ax.set_ylabel("UMAP 2")
+    #             ax.tick_params(direction='in', length=6, width=1)
+    #             ax.set_title(f"{model_name} — {'Test' if on_test else 'Train'}")
 
-        # put a single legend in the top-right panel
-        axes[0, 1].legend(
-            loc="upper left",
-            bbox_to_anchor=(1.02, 1),
-            title="KL-Score",
-            frameon=False
-        )
+    #     # put a single legend in the top-right panel
+    #     axes[0, 1].legend(
+    #         loc="upper left",
+    #         bbox_to_anchor=(1.02, 1),
+    #         title="KL-Score",
+    #         frameon=False
+    #     )
 
-        plt.tight_layout(rect=[0, 0, 0.95, 0.90])
+    #     plt.tight_layout(rect=[0, 0, 0.95, 0.90])
 
-        # save one file per label
-        if AVERAGE:
-            out_file = os.path.join(SAVE_PATH, "umap_label" '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + str(UMAP_PARAMS['metric']) + f"_{STAGE}_{NEPOCH}_average_{lab}.png")
-        else:
-            out_file = os.path.join(SAVE_PATH, "umap_label" '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + str(UMAP_PARAMS['metric']) + f"_{STAGE}_{NEPOCH}_{SEED}_{lab}.png")
-        fig.savefig(out_file, dpi=150)
-        plt.close(fig)
+    #     # save one file per label
+    #     if AVERAGE:
+    #         out_file = os.path.join(SAVE_PATH, "umap_label" '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + str(UMAP_PARAMS['metric']) + f"_{STAGE}_{NEPOCH}_average_{lab}.png")
+    #     else:
+    #         out_file = os.path.join(SAVE_PATH, "umap_label" '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + str(UMAP_PARAMS['metric']) + f"_{STAGE}_{NEPOCH}_{SEED}_{lab}.png")
+    #     fig.savefig(out_file, dpi=150)
+    #     plt.close(fig)
 
-        # for (model_name, on_test), (X_umap, y) in embeddings.items():
-        #     split_name = 'test' if on_test else 'train'
-        #     out_dir   = os.path.join(SAVE_PATH, "per_label")
-        #     os.makedirs(out_dir, exist_ok=True)
+    #     # for (model_name, on_test), (X_umap, y) in embeddings.items():
+    #     #     split_name = 'test' if on_test else 'train'
+    #     #     out_dir   = os.path.join(SAVE_PATH, "per_label")
+    #     #     os.makedirs(out_dir, exist_ok=True)
 
-        # for lab in sorted(set(y)):
-        #     fig, ax = plt.subplots(figsize=(6,6))
+    #     # for lab in sorted(set(y)):
+    #     #     fig, ax = plt.subplots(figsize=(6,6))
 
-        #     # 1) plot everything in light gray
-        #     ax.scatter(
-        #         X_umap[:,0],
-        #         X_umap[:,1],
-        #         s=10,
-        #         color='lightgray',
-        #         alpha=0.4,
-        #         edgecolor='none'
-        #     )
+    #     #     # 1) plot everything in light gray
+    #     #     ax.scatter(
+    #     #         X_umap[:,0],
+    #     #         X_umap[:,1],
+    #     #         s=10,
+    #     #         color='lightgray',
+    #     #         alpha=0.4,
+    #     #         edgecolor='none'
+    #     #     )
 
-        #     # 2) overplot only this label in its true color
-        #     mask = (y == lab)
-        #     ax.scatter(
-        #         X_umap[mask,0],
-        #         X_umap[mask,1],
-        #         s=30,
-        #         color=cmap5(int(lab)),
-        #         edgecolor='k',
-        #         linewidth=0.4,
-        #         alpha=0.8,
-        #         label=f"Label {lab}"
-        #     )
+    #     #     # 2) overplot only this label in its true color
+    #     #     mask = (y == lab)
+    #     #     ax.scatter(
+    #     #         X_umap[mask,0],
+    #     #         X_umap[mask,1],
+    #     #         s=30,
+    #     #         color=cmap5(int(lab)),
+    #     #         edgecolor='k',
+    #     #         linewidth=0.4,
+    #     #         alpha=0.8,
+    #     #         label=f"Label {lab}"
+    #     #     )
 
-            # ax.set_title(f"{model_name} – {split_name} – label {lab}", fontsize=14)
-            # ax.set_xlabel("UMAP 1");  ax.set_ylabel("UMAP 2")
-            # ax.legend(loc='upper right', frameon=False)
+    #         # ax.set_title(f"{model_name} – {split_name} – label {lab}", fontsize=14)
+    #         # ax.set_xlabel("UMAP 1");  ax.set_ylabel("UMAP 2")
+    #         # ax.legend(loc='upper right', frameon=False)
 
-            # # optional: keep same x/y limits across all labels
-            # ax.set_xlim(min_x, max_x)
-            # ax.set_ylim(min_y, max_y)
+    #         # # optional: keep same x/y limits across all labels
+    #         # ax.set_xlim(min_x, max_x)
+    #         # ax.set_ylim(min_y, max_y)
 
-            # plt.tight_layout()
-            # fname = os.path.join(out_dir, f"{model_name}_{split_name}_label_{lab}.png")
-            # fig.savefig(fname, dpi=150)
-            # plt.close(fig)
+    #         # plt.tight_layout()
+    #         # fname = os.path.join(out_dir, f"{model_name}_{split_name}_label_{lab}.png")
+    #         # fig.savefig(fname, dpi=150)
+    #         # plt.close(fig)
