@@ -16,7 +16,7 @@ PATH_TO_ANOM_SCORES = config.PATH_TO_ANOM
 stages = ['ss', 'stage2', 'stage3', 'stage_severe_pred']
 # TRAIN_PLATEAU_EPOCH = 400
 
-MOD_NAME="mod_st"
+MOD_NAME="mod_2"
 
 stage_dict = {
     'mod_st': {
