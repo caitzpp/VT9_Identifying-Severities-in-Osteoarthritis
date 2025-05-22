@@ -51,7 +51,7 @@ def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix, test_
 
     return best_epochs
 
-def ensemble_results(df, stage, metric, meta_data_dir, get_oarsi_results):
+def ensemble_results(df, stage, metric):
 
     res, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df, metric)
 
@@ -249,3 +249,53 @@ def get_metrics(df, score):
 
     return res[0], auc, auc_mid, auc_mid2, auc_sev
 
+def create_scores_dataframe(path_to_anom_scores, files, metric):
+    for i,file in enumerate(files):
+        if i ==0:
+            df = pd.read_csv(os.path.join(path_to_anom_scores, file))
+            df = df.sort_values(by='id').reset_index(drop=True)[['id','label', metric]]
+        else:
+            sc = pd.read_csv(os.path.join(path_to_anom_scores, file))
+            sc = sc.sort_values(by='id').reset_index(drop=True)[['id','label', metric]]
+            df.iloc[:,2:] = df.iloc[:,2:] + sc.iloc[:,2:]
+
+    df.iloc[:,2:] = df.iloc[:,2:] / len(files)
+    return df
+
+
+def get_threshold(path_to_anom_scores_sev, epoch_sev, metric):
+    files_total = os.listdir(path_to_anom_scores_sev)
+    files = [file for file in files_total if (('epoch_' + str(epoch_sev) ) in file) & ('on_test_set' in file ) ]
+
+    train = create_scores_dataframe(path_to_anom_scores_sev, files, metric)
+    train[metric] = (train[metric] + 2) / 4
+    threshold = np.percentile(train[metric], 95)
+    return threshold
+
+def combine_results(path_to_anom_scores_oa, path_to_anom_scores_sev, epoch_oa, epoch_sev, metric, model_name_prefix ):
+    threshold = get_threshold(path_to_anom_scores_sev, epoch_sev, metric)
+
+    files_total = os.listdir(path_to_anom_scores_oa)
+    files=[]
+    for key in epoch_oa.keys():
+        files = files + [file for file in files_total if (('epoch_' + str(epoch_oa[key]) ) in file) & ('on_test_set' in file ) & ('seed_' + str(key) in file) & (model_name_prefix  in file) ]
+
+    df_oa = create_scores_dataframe(path_to_anom_scores_oa, files, metric)
+
+    files_total = os.listdir(path_to_anom_scores_sev)
+    files = [file for file in files_total if (('epoch_' + str(epoch_sev) ) in file) & ('on_test_set' in file ) ]
+    df_sev = create_scores_dataframe(path_to_anom_scores_sev, files, metric)
+
+
+    df_oa['comb_score'] = df_oa[metric]
+    df_oa['comb_score']= (df_oa['comb_score'] + 2) / 4
+    df_sev['comb_score'] = df_sev[metric]
+    df_sev['comb_score']= (df_sev['comb_score'] + 2) / 4
+    df_oa = df_oa.sort_values(by='id').reset_index(drop=True)
+    df_sev = df_sev.sort_values(by='id').reset_index(drop=True)
+    df_oa.loc[df_sev['comb_score'] > threshold, 'comb_score'] = 1 + df_sev.loc[df_sev['comb_score'] > threshold, 'comb_score']
+    stage='Final, combined'
+
+    print('---------------------------------------------------- For stage ' + stage + '----------------------------------------------------')
+    print('-----------------------------RESULTS ON TEST SET---------------------------')
+    ensemble_results(df_oa, stage, 'comb_score')
