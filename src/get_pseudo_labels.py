@@ -2,14 +2,15 @@ import config
 import os
 import pandas as pd
 import numpy as np
+import json
+import sys
 
-STAGE = 'ss'
-EPOCH = 400
+STAGE = 'stage3'
 MOD_PREFIX = 'mod_st'
-on_test_set = True
-metric = 'centre_mean'
-margin = 0.8
+on_test_set = False
 meta_data = "meta2"
+margin = 0.8
+margin_file = '1.0927999999999678'
 
 PATH_TO_ANOMS = config.PATH_TO_ANOM #dfs path
 SAVE_PATH = config.OUTPUT_PATH
@@ -17,18 +18,35 @@ save_path = os.path.join(SAVE_PATH, 'pseudolabels')
 sim_path = os.path.join(config.DIR_PATH, meta_data)
 os.makedirs(save_path, exist_ok=True)
 
-
 path_to_anoms = os.path.join(PATH_TO_ANOMS, STAGE)
-seeds = [1001,71530,138647,875688,985772,44,34,193,244959,8765] #[1001,71530,138647,875688,985772,44,34,193,244959,8765]
-
 
 if __name__=="__main__":
+    with open(os.path.join(sim_path, f"{MOD_PREFIX}_data.json"), 'r') as f:
+        info = json.load(f)
+    EPOCH = info[STAGE]['best_epochs']
+    seeds = info[STAGE]['seeds']
+
+    if STAGE == 'ss':
+        metric = 'centre_mean'
+    else:
+        metric = 'w_centre'
+
     files_total = os.listdir(path_to_anoms)
 
     if on_test_set==True:
-        files = [f for f in files_total if ( ('epoch_' + str(EPOCH) in f) &  ('on_test_set_' in f)  &  (MOD_PREFIX in f)  ) ]
+        if isinstance(EPOCH, dict):
+            files = []
+            for key in EPOCH.keys():
+                files = files + [f for f in files_total if ( ('epoch_' + str(EPOCH[key]) in f) & ('seed_' + str(key) in f) & ('on_test_set_' in f)  &  (MOD_PREFIX in f) & (margin_file in f) ) ]
+        else:
+            files = [f for f in files_total if ( ('epoch_' + str(EPOCH) in f) &  ('on_test_set_' in f)  &  (MOD_PREFIX in f) & (margin_file in f)  ) ]
     else:
-        files = [f for f in files_total if ( ('epoch_' + str(EPOCH) in f) &  ('on_test_set_' not in f)  &  (MOD_PREFIX in f)  ) ]
+        if isinstance(EPOCH, dict):
+            files = []
+            for key in EPOCH.keys():
+                files = files + [f for f in files_total if ( ('epoch_' + str(EPOCH[key]) in f) & ('seed_' + str(key) in f) & ('on_test_set_' not in f)  &  (MOD_PREFIX in f) & (margin_file in f)  ) ]
+        else:
+            files = [f for f in files_total if ( ('epoch_' + str(EPOCH) in f) &  ('on_test_set_' not in f)  &  (MOD_PREFIX in f) & (margin_file in f)  ) ]
     for i,seed in enumerate(seeds):
 
         for file in files:
@@ -58,15 +76,21 @@ if __name__=="__main__":
         df[f'anom_{seed}'] = 0
 
     df["anoms_count"]= 0
+    max = float(np.max(df['av']))
     for i in range(len(df)):
         for j in range(len(seeds)):
             seed = seeds[j]
-
-            if df[f'col_{seed}'].iloc[i] > (margin * np.max(df['av'])): #here using the average over the entire train df
+            col_value = df[f'col_{seed}'].iloc[i]
+            if col_value > float((margin * max)): #here using the average over the entire train df
                 df.loc[i, f'anom_{seed}']=1
                 df.loc[i, f'anoms_count']+=1
     df['id'] = df['id'].apply(lambda x: x.split('/')[-2] + '/' + x.split('/')[-1])
+<<<<<<< HEAD
+
+    if on_test_set==True:
+=======
     if on_test_set == True:
+>>>>>>> 9d27858076f2e2184ce4d0584f46c4107a1ee97a
         sim = pd.read_csv(os.path.join(sim_path, "sim_scores_test.csv"), index_col=False)
     else:
         sim = pd.read_csv(os.path.join(sim_path, "sim_scores.csv"), index_col=False)
@@ -75,9 +99,9 @@ if __name__=="__main__":
     df = df.merge(sim,on='id', how='left')
     df['sim>95th'] = df['sim'].apply(lambda x: 0 if x < np.percentile(df['sim'], 95) else 1) # 1 if larger than 95th percentile
     if on_test_set==True:
-        df.to_csv(os.path.join(save_path, f"{STAGE}_training_{MOD_PREFIX}_on_test_set_epoch_{EPOCH}_margin_{margin}.csv"), index=False)
+        df.to_csv(os.path.join(save_path, f"{STAGE}_training_{MOD_PREFIX}_on_test_set_margin_{margin}.csv"), index=False)
     else:
-        df.to_csv(os.path.join(save_path, f"{STAGE}_training_{MOD_PREFIX}_epoch_{EPOCH}_margin_{margin}.csv"), index=False)
+        df.to_csv(os.path.join(save_path, f"{STAGE}_training_{MOD_PREFIX}_epoch_margin_{margin}.csv"), index=False)
 
     
     

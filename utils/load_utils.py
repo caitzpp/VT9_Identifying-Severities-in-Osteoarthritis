@@ -31,3 +31,5 @@ def load_npy_folder_as_array(folder, flatten=True):
                 y.append(int(label))
 
     return np.array(X), np.array(y)
+def load_image(img):
+    return Image.open(img)
