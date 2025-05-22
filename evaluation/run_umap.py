@@ -83,15 +83,18 @@ if __name__=="__main__":
     #     spine.set_visible(False)
 
     handles, labels = scatter.legend_elements(
-            prop="colors",     # grab the colored patches
-            num=5               # how many classes
-        )
+        prop="colors",
+        num=4
+    )
+
     ax.legend(
-            handles, labels,
-            title="Label",
-            loc="upper right",
-            frameon=False
-        )
+        handles, labels,
+        title="Label",
+        loc="upper left",
+        bbox_to_anchor=(1.02, 1),
+        borderaxespad=0.,
+        frameon=False
+    )
 
     ax.set_title("True Labels")
 
