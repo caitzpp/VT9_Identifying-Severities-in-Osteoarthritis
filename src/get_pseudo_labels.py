@@ -5,12 +5,12 @@ import numpy as np
 import json
 import sys
 
-STAGE = 'stage3'
+STAGE = 'stage_severe_pred'
 MOD_PREFIX = 'mod_st'
-on_test_set = False
+on_test_set = True
 meta_data = "meta2"
 margin = 0.8
-margin_file = '1.0927999999999678'
+margin_file = '1.016'
 
 PATH_TO_ANOMS = config.PATH_TO_ANOM #dfs path
 SAVE_PATH = config.OUTPUT_PATH
@@ -25,8 +25,9 @@ if __name__=="__main__":
         info = json.load(f)
     EPOCH = info[STAGE]['best_epochs']
     seeds = info[STAGE]['seeds']
+    print(seeds)
 
-    if STAGE == 'ss':
+    if STAGE == 'ss' and STAGE == 'stage_severe_pred':
         metric = 'centre_mean'
     else:
         metric = 'w_centre'
@@ -47,6 +48,7 @@ if __name__=="__main__":
                 files = files + [f for f in files_total if ( ('epoch_' + str(EPOCH[key]) in f) & ('seed_' + str(key) in f) & ('on_test_set_' not in f)  &  (MOD_PREFIX in f) & (margin_file in f)  ) ]
         else:
             files = [f for f in files_total if ( ('epoch_' + str(EPOCH) in f) &  ('on_test_set_' not in f)  &  (MOD_PREFIX in f) & (margin_file in f)  ) ]
+    print(files)
     for i,seed in enumerate(seeds):
 
         for file in files:
@@ -85,12 +87,8 @@ if __name__=="__main__":
                 df.loc[i, f'anom_{seed}']=1
                 df.loc[i, f'anoms_count']+=1
     df['id'] = df['id'].apply(lambda x: x.split('/')[-2] + '/' + x.split('/')[-1])
-<<<<<<< HEAD
 
-    if on_test_set==True:
-=======
     if on_test_set == True:
->>>>>>> 9d27858076f2e2184ce4d0584f46c4107a1ee97a
         sim = pd.read_csv(os.path.join(sim_path, "sim_scores_test.csv"), index_col=False)
     else:
         sim = pd.read_csv(os.path.join(sim_path, "sim_scores.csv"), index_col=False)
