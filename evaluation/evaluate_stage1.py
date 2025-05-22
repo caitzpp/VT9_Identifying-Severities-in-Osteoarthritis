@@ -1,4 +1,4 @@
-from utils.evaluation_utils import calc_mean_std, combine_results
+from utils.evaluation_utils import calc_mean_std, combine_results_with_std
 import config
 import os
 import pandas as pd
@@ -16,7 +16,7 @@ PATH_TO_ANOM_SCORES = config.PATH_TO_ANOM
 stages = ['ss', 'stage2', 'stage3', 'stage_severe_pred']
 # TRAIN_PLATEAU_EPOCH = 400
 
-MOD_NAME="mod_2"
+MOD_NAME="mod_st"
 
 stage_dict = {
     'mod_st': {
@@ -150,4 +150,4 @@ if __name__=="__main__":
     stage3_epoch = stage_dict[MOD_NAME]['stage3']['train_epoch']
     stage_severe_epoch = stage_dict[MOD_NAME]['stage_severe_pred']['train_epoch']
 
-    combine_results(stage3_path_to_anom_scores, stage_severe_path_to_anom_scores, stage3_epoch, stage_severe_epoch, 'w_centre', model_name_prefix = MOD_NAME)
+    combine_results_with_std(stage3_path_to_anom_scores, stage_severe_path_to_anom_scores, stage3_epoch, stage_severe_epoch, 'w_centre', model_name_prefix = MOD_NAME)

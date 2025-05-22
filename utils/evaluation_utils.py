@@ -262,40 +262,204 @@ def create_scores_dataframe(path_to_anom_scores, files, metric):
     df.iloc[:,2:] = df.iloc[:,2:] / len(files)
     return df
 
+def create_scores_stats(path_to_anom_scores, files, metric):
+    """
+    Reads all files, aligns them by 'id' and 'label', and returns a DataFrame
+    with columns:
+      - id, label
+      - mean_<metric>
+      - std_<metric>
+    """
+    dfs = []
+    for file in files:
+        df = pd.read_csv(os.path.join(path_to_anom_scores, file))
+        df = (
+            df.sort_values(by='id')
+              .reset_index(drop=True)
+              [['id', 'label', metric]]
+        )
+        dfs.append(df)
+
+    # start from the first run, but rename its metric column to metric_0
+    base = dfs[0].copy().rename(columns={ metric: f"{metric}_0" })
+
+    # add each subsequent run's scores as its own column metric_1, metric_2, ...
+    for i, df_i in enumerate(dfs[1:], start=1):
+        base[f'{metric}_{i}'] = df_i[metric]
+
+    # now all metric_X columns exist
+    metric_cols = [f'{metric}_{i}' for i in range(len(dfs))]
+    base[f'mean_{metric}'] = base[metric_cols].mean(axis=1)
+    base[f'std_{metric}']  = base[metric_cols].std(axis=1)
+
+    return base[['id', 'label', f'mean_{metric}', f'std_{metric}']]
 
 def get_threshold(path_to_anom_scores_sev, epoch_sev, metric):
     files_total = os.listdir(path_to_anom_scores_sev)
-    files = [file for file in files_total if (('epoch_' + str(epoch_sev) ) in file) & ('on_test_set' in file ) ]
+    files = [
+        f for f in files_total
+        if f'epoch_{epoch_sev}' in f and 'on_test_set' in f
+    ]
 
-    train = create_scores_dataframe(path_to_anom_scores_sev, files, metric)
-    train[metric] = (train[metric] + 2) / 4
-    threshold = np.percentile(train[metric], 95)
+    stats = create_scores_stats(path_to_anom_scores_sev, files, metric)
+    # normalize the MEAN score before thresholding
+    stats[f'mean_{metric}'] = (stats[f'mean_{metric}'] + 2) / 4
+    threshold = np.percentile(stats[f'mean_{metric}'], 95)
     return threshold
 
-def combine_results(path_to_anom_scores_oa, path_to_anom_scores_sev, epoch_oa, epoch_sev, metric, model_name_prefix ):
+# def get_threshold(path_to_anom_scores_sev, epoch_sev, metric):
+#     # (same as before)
+#     files = [
+#         f for f in os.listdir(path_to_anom_scores_sev)
+#         if f'epoch_{epoch_sev}' in f and 'on_test_set' in f
+#     ]
+#     stats = create_scores_stats(path_to_anom_scores_sev, files, metric)
+#     stats[f'mean_{metric}'] = (stats[f'mean_{metric}'] + 2) / 4
+#     return np.percentile(stats[f'mean_{metric}'], 95)
+
+
+def combine_results(
+    path_to_anom_scores_oa,
+    path_to_anom_scores_sev,
+    epoch_oa,
+    epoch_sev,
+    metric,
+    model_name_prefix
+):
+    # get your severity threshold from the SEV runs
     threshold = get_threshold(path_to_anom_scores_sev, epoch_sev, metric)
 
+    # collect OA files across all seeds
     files_total = os.listdir(path_to_anom_scores_oa)
-    files=[]
-    for key in epoch_oa.keys():
-        files = files + [file for file in files_total if (('epoch_' + str(epoch_oa[key]) ) in file) & ('on_test_set' in file ) & ('seed_' + str(key) in file) & (model_name_prefix  in file) ]
+    oa_files = []
+    for seed, ep in epoch_oa.items():
+        oa_files += [
+            f for f in files_total
+            if f'epoch_{ep}' in f
+           and 'on_test_set' in f
+           and f'seed_{seed}' in f
+           and model_name_prefix in f
+        ]
 
-    df_oa = create_scores_dataframe(path_to_anom_scores_oa, files, metric)
+    # build OA stats (mean and std)
+    oa_stats = create_scores_stats(path_to_anom_scores_oa, oa_files, metric)
+    # normalize OA mean
+    oa_stats['comb_score'] = (oa_stats[f'mean_{metric}'] + 2) / 4
 
-    files_total = os.listdir(path_to_anom_scores_sev)
-    files = [file for file in files_total if (('epoch_' + str(epoch_sev) ) in file) & ('on_test_set' in file ) ]
-    df_sev = create_scores_dataframe(path_to_anom_scores_sev, files, metric)
+    # build SEV stats (mean and std)
+    sev_files = [
+        f for f in os.listdir(path_to_anom_scores_sev)
+        if f'epoch_{epoch_sev}' in f and 'on_test_set' in f
+    ]
+    sev_stats = create_scores_stats(path_to_anom_scores_sev, sev_files, metric)
+    sev_stats['comb_score'] = (sev_stats[f'mean_{metric}'] + 2) / 4
+
+    # align and apply threshold: wherever sev > thresh, bump OA score
+    oa_stats = oa_stats.sort_values('id').reset_index(drop=True)
+    sev_stats = sev_stats.sort_values('id').reset_index(drop=True)
+
+    mask = sev_stats['comb_score'] > threshold
+    oa_stats.loc[mask, 'comb_score'] = 1 + sev_stats.loc[mask, 'comb_score']
+
+    # for clarity, rename the std columns
+    oa_stats.rename(
+        columns={f'std_{metric}': 'std_oa_' + metric},
+        inplace=True
+    )
+    sev_stats.rename(
+        columns={f'std_{metric}': 'std_sev_' + metric},
+        inplace=True
+    )
+
+    # merge OA and SEV stds into one table if you like
+    combined = oa_stats.merge(
+        sev_stats[['id', 'std_sev_' + metric]],
+        on='id', how='left'
+    )
+
+    print('----------------------------------------------------')
+    print('    RESULTS ON TEST SET — Final, combined')
+    print('----------------------------------------------------')
+    # this assumes ensemble_results knows to look for 'comb_score'
+    ensemble_results(combined, 'Final, combined', 'comb_score')
+
+    # and if you want to inspect the stds:
+    print('\nPer‐ID standard deviations:')
+    print(combined[['id', 'std_oa_' + metric, 'std_sev_' + metric]].head())
+
+    return combined
 
 
-    df_oa['comb_score'] = df_oa[metric]
-    df_oa['comb_score']= (df_oa['comb_score'] + 2) / 4
-    df_sev['comb_score'] = df_sev[metric]
-    df_sev['comb_score']= (df_sev['comb_score'] + 2) / 4
-    df_oa = df_oa.sort_values(by='id').reset_index(drop=True)
-    df_sev = df_sev.sort_values(by='id').reset_index(drop=True)
-    df_oa.loc[df_sev['comb_score'] > threshold, 'comb_score'] = 1 + df_sev.loc[df_sev['comb_score'] > threshold, 'comb_score']
-    stage='Final, combined'
+def combine_results_with_std(
+    path_to_anom_scores_oa,
+    path_to_anom_scores_sev,
+    epoch_oa,
+    epoch_sev,
+    metric,
+    model_name_prefix
+):
+    # 1) compute the severity threshold once
+    threshold = get_threshold(path_to_anom_scores_sev, epoch_sev, metric)
 
-    print('---------------------------------------------------- For stage ' + stage + '----------------------------------------------------')
-    print('-----------------------------RESULTS ON TEST SET---------------------------')
-    ensemble_results(df_oa, stage, 'comb_score')
+    # 2) pre-compute the SEV-side “bump” (it's the same for all OA seeds)
+    sev_files = [
+        f for f in os.listdir(path_to_anom_scores_sev)
+        if f'epoch_{epoch_sev}' in f and 'on_test_set' in f
+    ]
+    sev_stats = create_scores_stats(path_to_anom_scores_sev, sev_files, metric)
+    sev_stats['comb_score_sev'] = (sev_stats[f'mean_{metric}'] + 2) / 4
+    sev_stats = sev_stats.sort_values('id').reset_index(drop=True)
+
+    # 3) now loop over each OA seed and compute its metrics
+    results = []
+    for seed, ep in epoch_oa.items():
+        # pick only that seed’s OA files
+        files_total = os.listdir(path_to_anom_scores_oa)
+        oa_files = [
+            f for f in files_total
+            if f'epoch_{ep}' in f
+            and 'on_test_set' in f
+            and f'seed_{seed}' in f
+            and model_name_prefix in f
+        ]
+        oa_stats = create_scores_stats(path_to_anom_scores_oa, oa_files, metric)
+        oa_stats['comb_score'] = (oa_stats[f'mean_{metric}'] + 2) / 4
+
+        # apply the severity bump wherever sev > threshold
+        oa_stats = oa_stats.sort_values('id').reset_index(drop=True)
+        mask = sev_stats['comb_score_sev'] > threshold
+        oa_stats.loc[mask, 'comb_score'] = 1 + sev_stats.loc[mask, 'comb_score_sev']
+
+        # now compute your three metrics:
+        # — Spearman between the true label (0/1/2) and comb_score
+        # — OA‐vs‐normal AUC: label>0
+        # — severe‐vs‐nonsevere AUC: label==2
+        y_true = oa_stats['label']
+        y_oa   = (y_true > 0).astype(int)
+        y_sev  = (y_true == 2).astype(int)
+        cs     = oa_stats['comb_score']
+
+        sp     = stats.spearmanr(y_true, cs).correlation
+        auc_oa = roc_auc_score(y_oa, cs)
+        auc_sev= roc_auc_score(y_sev, cs)
+
+        results.append({
+            'seed': seed,
+            'spearman': sp,
+            'oa_auc':   auc_oa,
+            'sev_auc':  auc_sev
+        })
+
+        #print(f"Seed {seed:<2} →  Spearman: {sp:.3f}   OA AUC: {auc_oa:.3f}   Sev AUC: {auc_sev:.3f}")
+
+    # 4) aggregate across seeds
+    dfm = pd.DataFrame(results).set_index('seed')
+    means = dfm.mean()
+    stds  = dfm.std()
+
+    print('\nOverall performance across seeds:')
+    print(f" • Spearman rank: {means['spearman']:.3f}  ±  {stds['spearman']:.3f}")
+    print(f" • OA AUC:         {means['oa_auc']:.3f}  ±  {stds['oa_auc']:.3f}")
+    print(f" • Severe AUC:     {means['sev_auc']:.3f}  ±  {stds['sev_auc']:.3f}")
+
+    return dfm, means, stds
