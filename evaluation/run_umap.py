@@ -11,7 +11,7 @@ STAGE = 'ss'
 NEPOCH = '400'
 MODEL_NAME = 'mod_st'
 seed = '34'
-on_test_set = True
+on_test_set = False
 DATA_PATH = config.FEATURE_PATH
 DATA_TYPE = "features" #"chenetal_train"
 
@@ -73,13 +73,31 @@ if __name__=="__main__":
         X_umap[:, 1],
         c=y,
         cmap=cmap5,
-        s=5
+        s=30,
+        alpha= 0.7,
+        edgecolor='k',
+        linewidth=0.5,
     )
+    # ax.set_xticks([]);  ax.set_yticks([])
+    # for spine in ax.spines.values():
+    #     spine.set_visible(False)
+
+    handles, labels = scatter.legend_elements(
+            prop="colors",     # grab the colored patches
+            num=5               # how many classes
+        )
+    ax.legend(
+            handles, labels,
+            title="Label",
+            loc="upper right",
+            frameon=False
+        )
+
     ax.set_title("True Labels")
 
-    # 5) add a colorbar tied to that scatter
-    cbar = fig.colorbar(scatter, ax=ax, ticks=range(5))
-    cbar.set_label("Label")
+    
+    # cbar = fig.colorbar(scatter, ax=ax, ticks=range(5))
+    # cbar.set_label("Label")
 
     plt.tight_layout()
 
