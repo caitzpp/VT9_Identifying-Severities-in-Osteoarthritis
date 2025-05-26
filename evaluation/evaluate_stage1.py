@@ -13,10 +13,12 @@ DATA_PATH = config.PATH_TO_RESULTS
 SAVE_PATH = config.OUTPUT_PATH
 PATH_TO_ANOM_SCORES = config.PATH_TO_ANOM
 
-stages = ['ss', 'stage2', 'stage3', 'stage_severe_pred']
+stages = ['stage2'] #['ss', 'stage2', 'stage3', 'stage_severe_pred']
 # TRAIN_PLATEAU_EPOCH = 400
 
 MOD_NAME="mod_2"
+
+MARGIN = None
 
 stage_dict = {
     'mod_st': {
@@ -85,7 +87,6 @@ if __name__=="__main__":
         seeds = cur_dict['seeds']
         
         files_total = os.listdir(data_path)
-    # #files_total = os.listdir(PATH_TO_ANOM_SCORES)
 
         print('---------------------------------------------------- For stage ' + stage + '----------------------------------------------------')
         print('-----------------------------RESULTS ON UNLABELLED DATA---------------------------')
@@ -93,11 +94,32 @@ if __name__=="__main__":
 
         metrics_per_seed = []
 
-        if isinstance(train_epoch, dict):
-            for seed in seeds:
-                files = [file for file in files_total if (('epoch_' + str(train_epoch[str(seed)]) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file) & (str(seed) in file)]
+        if MARGIN:
+            if isinstance(train_epoch, dict):
+                for seed in seeds:
+                    files = [file for file in files_total if ('on_test_set' not in file ) & (MOD_NAME in file) & (str(seed) in file) & (str(MARGIN) in file)]
+                    #files = [file for file in files_total if (('epoch_' + str(train_epoch[str(seed)]) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file) & (str(seed) in file) & (str(MARGIN) in file)]
+            else:
+                files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file) & (str(MARGIN) in file)]
+
         else:
-            files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file)]
+            if isinstance(train_epoch, dict):
+                for seed in seeds:
+                    files = [file for file in files_total if (('epoch_' + str(train_epoch[str(seed)]) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file) & (str(seed) in file)]
+            else:
+                files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file)]
+
+        # files = ['stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_1001_N_30_epoch_1390', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_138647_N_30_epoch_1190', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_193_N_30_epoch_800', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_244959_N_30_epoch_1380', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_34_N_30_epoch_1270', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_44_N_30_epoch_1290', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_71530_N_30_epoch_1250', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_875688_N_30_epoch_800', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_8765_N_30_epoch_800', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_985772_N_30_epoch_1320', 
+        # ]
 
         means, stds = calc_mean_std(files, data_path, metric)
 
@@ -126,6 +148,16 @@ if __name__=="__main__":
         else:
             files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' in file ) & (MOD_NAME in file)]
 
+        # files = ['stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_1001_N_30_on_test_set_epoch_1390', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_138647_N_30_on_test_set_epoch_1190', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_193_N_30_on_test_set_epoch_800', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_244959_N_30_on_test_set_epoch_1380', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_34_N_30_on_test_set_epoch_1270', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_44_N_30_on_test_set_epoch_1290', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_71530_N_30_on_test_set_epoch_1250', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_875688_N_30_on_test_set_epoch_800', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_8765_N_30_on_test_set_epoch_800', 
+        #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_985772_N_30_on_test_set_epoch_1320']
         means, stds = calc_mean_std(files, data_path, metric)
 
         spearman = means['spearman']
