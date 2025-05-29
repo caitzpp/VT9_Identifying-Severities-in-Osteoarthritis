@@ -17,3 +17,4 @@ dependencies:
       - torch
       - hdbscan
       - umap-learn
+      - opencv-python=4.11.0.86
