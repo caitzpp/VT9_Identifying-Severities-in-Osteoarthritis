@@ -15,10 +15,15 @@ NEPOCH      = '400'
 MODELS      = ['mod_st', 'mod_2']
 SEED        = '34'
 AVERAGE = True
+wScaler = True
+SCALER = StandardScaler()
 DATA_PATH   = config.FEATURE_PATH
-SAVE_PATH   = os.path.join(config.OUTPUT_PATH, "UMAP", "img")
-n_neighbors = [2, 20, 50]
-min_dist = [0.01, 0.1, 0.2, 0.5]
+DATA_PATH = os.path.dirname(DATA_PATH)
+DATA_PATH = os.path.join(DATA_PATH, "features_woNorm")
+SAVE_PATH   = os.path.join(config.OUTPUT_PATH, "UMAP", "img_woNorm")
+n_neighbors = [5]
+min_dist = [0.01, 0.05]
+metric = 'cosine' 
 # UMAP_PARAMS = {
 #     'n_neighbors': 50,
 #     'metric':      'cosine',
@@ -70,7 +75,7 @@ if __name__ == "__main__":
     for i, (n_neighbors, min_dist) in enumerate(pairings):
         UMAP_PARAMS = {
             'n_neighbors': n_neighbors,
-            'metric':      'euclidean',
+            'metric':      metric,
             'min_dist':    min_dist,
             'random_state': int(SEED)
         }
@@ -95,6 +100,8 @@ if __name__ == "__main__":
             for j, on_test in enumerate((False, True)):
                 ax = axes[i, j]
                 X, y = load_features(model_name, on_test, average=AVERAGE)
+                if wScaler:
+                    X = SCALER.fit_transform(X)
 
                 if UMAP_PARAMS['metric'] == 'euclidean':
                     X = StandardScaler().fit_transform(X)
@@ -157,9 +164,15 @@ if __name__ == "__main__":
         plt.tight_layout(rect=[0, 0, 0.95, 0.90])
 
         # save out
-        if AVERAGE:
-            outname = "compare_models_train_test" + '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist'])  +  '_' + str(UMAP_PARAMS['metric']) + f"{STAGE}_{NEPOCH}_average.png"
+        if wScaler:
+            scaler_name = SCALER.__class__.__name__
+            b_outname = "compare_models_train_test" + '_' + scaler_name + '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist'])  +  '_' + str(UMAP_PARAMS['metric']) + f"{STAGE}_{NEPOCH}"
         else:
-            outname = "compare_models_train_test" + '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist'])  +  '_' + str(UMAP_PARAMS['metric']) + f"{STAGE}_{NEPOCH}_{SEED}.png"
+            b_outname = "compare_models_train_test" + '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist'])  +  '_' + str(UMAP_PARAMS['metric']) + f"{STAGE}_{NEPOCH}"
+
+        if AVERAGE:
+            outname = b_outname + "_average.png"
+        else:
+            outname = b_outname + f"_{SEED}.png"
         plt.savefig(os.path.join(SAVE_PATH, outname), dpi=150)
         plt.close(fig)

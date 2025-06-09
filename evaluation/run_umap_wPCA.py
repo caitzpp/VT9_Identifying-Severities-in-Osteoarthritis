@@ -5,6 +5,7 @@ from umap import UMAP
 from sklearn.decomposition import PCA
 import config
 from utils.load_utils import load_npy_folder_as_array
+from sklearn.preprocessing import StandardScaler
 
 # -------------------------------------------------------------------
 # SETTINGS
@@ -15,12 +16,16 @@ MODELS       = ['mod_st', 'mod_2']
 SEED         = '34'
 AVERAGE      = True
 PCA_N_COMPONENTS = 50       # <-- how many PCs before UMAP
-DATA_PATH    = config.FEATURE_PATH
-SAVE_PATH    = os.path.join(config.OUTPUT_PATH, "UMAP", "img", "pca")
+wScaler = True
+SCALER = StandardScaler()
+DATA_PATH   = config.FEATURE_PATH
+DATA_PATH = os.path.dirname(DATA_PATH)
+DATA_PATH = os.path.join(DATA_PATH, "features_woNorm")
+SAVE_PATH    = os.path.join(config.OUTPUT_PATH, "UMAP", "img_woNorm", "pca")
 os.makedirs(SAVE_PATH, exist_ok=True)
 UMAP_PARAMS  = {
     'n_neighbors':  15,
-    'metric':       'euclidean',
+    'metric':       'cosine',
     'min_dist':     0.01,
     'random_state': int(SEED)
 }
@@ -69,6 +74,9 @@ for model_name in MODELS:
     for on_test in (False, True):
         # load raw features
         X, y = load_features(model_name, on_test, average=AVERAGE)
+        if wScaler:
+            # apply standard scaling
+            X = SCALER.fit_transform(X)
 
         # PCA reduction
         pca = PCA(n_components=PCA_N_COMPONENTS, random_state=int(SEED))
@@ -142,6 +150,8 @@ plt.tight_layout(rect=[0, 0, 0.95, 0.90])
 # 3) Save figure
 # -------------------------------------------------------------------
 suffix = "average" if AVERAGE else SEED
+if wScaler:
+    suffix += f"_scaler_{SCALER.__class__.__name__}"
 outname = (
     f"compare_models_train_test_pca{PCA_N_COMPONENTS}"
     f"_nn{UMAP_PARAMS['n_neighbors']}"
