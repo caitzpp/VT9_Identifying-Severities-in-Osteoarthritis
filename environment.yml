@@ -10,11 +10,9 @@ dependencies:
   - pip
   - scikit-learn
   - umap-learn
-  - dotenv
+  - python-dotenv
+  - matplotlib
+  - seaborn
+  - hdbscan
   - pip:
-      - matplotlib
-      - seaborn
-      - torch
-      - hdbscan
-      - umap-learn
-      - opencv-python=4.11.0.86
+      - opencv-python==4.11.0.86
