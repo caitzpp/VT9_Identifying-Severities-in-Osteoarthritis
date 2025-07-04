@@ -20,15 +20,19 @@ wScaler = True
 SCALER = StandardScaler()
 DATA_PATH   = config.FEATURE_PATH
 DATA_PATH = os.path.dirname(DATA_PATH)
-DATA_PATH = os.path.join(DATA_PATH, "features_woNorm")
+DATA_PATH = os.path.join(DATA_PATH, "features")
 
-SAVE_PATH   = os.path.join(config.OUTPUT_PATH, "UMAP", "img_woNorm")
+SAVE_PATH   = os.path.join(config.OUTPUT_PATH, "UMAP", "img")
 os.makedirs(SAVE_PATH, exist_ok=True)
 UMAP_PARAMS = {
     'n_neighbors': 5,
-    'metric':      'cosine',
-    'min_dist':    0.001,
-    'random_state': int(SEED)
+    'metric':      'euclidean',
+    'min_dist':    0.5,
+    'spread': 10,
+    'random_state': int(SEED),
+    'n_components': 3,
+    'learning_rate': 1.0,
+    'init': 'spectral'
 }
 colors = [
     '#1f77b4',  # tab:blue
@@ -70,19 +74,21 @@ if __name__ == "__main__":
     max_x = -float('inf')
     min_y = float('inf')
     max_y = -float('inf')
+    min_z, max_z = float('inf'), -float('inf') if UMAP_PARAMS['n_components'] == 3 else (0, 0)
 
-    fig, axes = plt.subplots(
-        nrows=len(MODELS),
-        ncols=2,
-        figsize=(14, 12),
-        sharex=True,
-        sharey=True
-    )
+    # fig, axes = plt.subplots(
+    #     nrows=len(MODELS),
+    #     ncols=2,
+    #     figsize=(14, 12),
+    #     sharex=True,
+    #     sharey=True
+    # )
+    fig = plt.figure(figsize=(14, 12))
     fig.suptitle("UMAP embeddings: train vs test for two models", fontsize=18, y=0.92)
 
     for i, model_name in enumerate(MODELS):
         for j, on_test in enumerate((False, True)):
-            ax = axes[i, j]
+            ax = fig.add_subplot(len(MODELS), 2, i * 2 + j + 1, projection='3d' if UMAP_PARAMS['n_components'] == 3 else None)
             X, y = load_features(model_name, on_test, average=AVERAGE)
             if wScaler:
                 X = SCALER.fit_transform(X)
@@ -95,37 +101,67 @@ if __name__ == "__main__":
             max_x = max(max_x, X_umap[:,0].max())
             min_y = min(min_y, X_umap[:,1].min())
             max_y = max(max_y, X_umap[:,1].max())
+            if UMAP_PARAMS['n_components'] == 3:
+                min_z, max_z = min(min_z, X_umap[:, 2].min()), max(max_z, X_umap[:, 2].max())
 
-
-    fig, axes = plt.subplots(
-        nrows=len(MODELS),
-        ncols=2,
-        figsize=(14, 12)
-    )
+    fig = plt.figure(figsize=(14, 12))
+    # if UMAP_PARAMS['n_components'] == 2:
+    #     ax
+    #     fig, axes = plt.subplots(
+    #         nrows=len(MODELS),
+    #         ncols=2,
+    #         figsize=(14, 12)
+    #     )
+    # elif UMAP_PARAMS['n_components'] == 3:
+    #     fig, axes = plt.subplots(
+    #         nrows=len(MODELS),
+    #         ncols=2,
+    #         figsize=(14, 12),
+    #         projection='3d'
+    #     )
     fig.suptitle("UMAP embeddings: Train vs Test for Two Models", fontsize=18, y=0.92)
 
     for i, model_name in enumerate(MODELS):
         for j, on_test in enumerate((False, True)):
-            ax = axes[i, j]
+            ax = fig.add_subplot(len(MODELS), 2, i * 2 + j + 1, projection='3d' if UMAP_PARAMS['n_components'] == 3 else None)
+            #ax = axes[i, j]
             X_umap, y = embeddings[(model_name, on_test)]
 
             # plot each true label separately so we get 0,1,2,3,4 in the legend
-            for lab in sorted(set(y)):
-                mask = (y == lab)
-                ax.scatter(
-                    X_umap[mask, 0],
-                    X_umap[mask, 1],
-                    s=25,
-                    alpha=0.7,
-                    edgecolor='k',
-                    linewidth=0.3,
-                    color=cmap5(int(lab)),
-                    label=str(int(lab))
-                )
+            if UMAP_PARAMS['n_components'] == 2:
+                for lab in sorted(set(y)):
+                    mask = (y == lab)
+                    ax.scatter(
+                        X_umap[mask, 0],
+                        X_umap[mask, 1],
+                        s=25,
+                        alpha=0.7,
+                        edgecolor='k',
+                        linewidth=0.3,
+                        color=cmap5(int(lab)),
+                        label=str(int(lab))
+                    )
+            elif UMAP_PARAMS['n_components'] == 3:
+                for lab in sorted(set(y)):
+                    mask = (y==lab)
+                    ax.scatter(
+                        X_umap[:, 0],
+                        X_umap[:, 1],
+                        X_umap[:, 2],
+                        c=y,
+                        cmap=cmap5,
+                        s=30,
+                        alpha=0.7,
+                        edgecolor='k',
+                        linewidth=0.5,
+                    )
 
             # enforce the same limits everywhere
             ax.set_xlim(min_x-1, max_x+1)
             ax.set_ylim(min_y-1, max_y+1)
+            if UMAP_PARAMS['n_components'] == 3:
+                ax.set_zlim(min_z - 1, max_z + 1)
+                ax.set_zlabel("UMAP 3")
 
             # keep axes, ticks, spines visible
             ax.set_xlabel("UMAP 1")
@@ -148,9 +184,9 @@ if __name__ == "__main__":
     # save out
     if wScaler:
         scaler_name = SCALER.__class__.__name__
-        b_outname = "compare_models_train_test" + '_' + scaler_name + '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist'])  +  '_' + str(UMAP_PARAMS['metric']) + f"{STAGE}_{NEPOCH}"
+        b_outname = "compare_models_train_test" + '_' + scaler_name + '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + "lr_" + str(UMAP_PARAMS['learning_rate']) + '_' + 'ncomp' + str(UMAP_PARAMS['n_components']) +  '_' + (UMAP_PARAMS['init'] if UMAP_PARAMS['init'] != 'spectral' else '_') + str(UMAP_PARAMS['metric']) + f"{STAGE}_{NEPOCH}"
     else:
-        b_outname = "compare_models_train_test" + '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist'])  +  '_' + str(UMAP_PARAMS['metric']) + f"{STAGE}_{NEPOCH}"
+        b_outname = "compare_models_train_test" + '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + "lr_" + str(UMAP_PARAMS['learning_rate']) + '_' + 'ncomp' + str(UMAP_PARAMS['n_components']) +  '_' +  (UMAP_PARAMS['init'] if UMAP_PARAMS['init'] != 'spectral' else '_')+ str(UMAP_PARAMS['metric']) + f"{STAGE}_{NEPOCH}"
 
     if AVERAGE:
         outname = b_outname + "_average.png"
@@ -162,45 +198,85 @@ if __name__ == "__main__":
     labels = [0, 1, 2, 3, 4]
 
     for lab in labels:
-        fig, axes = plt.subplots(
-            nrows=len(MODELS),
-            ncols=2,
-            figsize=(14, 12),
-            sharex=True,
-            sharey=True
-        )
+        fig = plt.figure(figsize=(14, 12))
+
+        # if UMAP_PARAMS['n_components'] == 2:
+        #     fig, axes = plt.subplots(
+        #         nrows=len(MODELS),
+        #         ncols=2,
+        #         figsize=(14, 12),
+        #         sharex=True,
+        #         sharey=True
+        #     )
+        # elif UMAP_PARAMS['n_components'] == 3:
+        #     fig, axes = plt.subplots(
+        #         nrows=len(MODELS),
+        #         ncols=2,
+        #         figsize=(14, 12),
+        #         projection='3d'
+        #     )
         fig.suptitle(f"UMAP – KL-Score {lab}", fontsize=18, y=0.92)
         
         for i, model_name in enumerate(MODELS):
             for j, on_test in enumerate((False, True)):
-                ax = axes[i, j]
+                ax = fig.add_subplot(len(MODELS), 2, i * 2 + j + 1, projection='3d' if UMAP_PARAMS['n_components'] == 3 else None)
+                #ax = axes[i, j]
                 X_umap, y = embeddings[(model_name, on_test)]
 
-                ax.scatter(
-                    X_umap[:, 0],
-                    X_umap[:, 1],
-                    s=20,
-                    color='lightgray',
-                    alpha=0.4,
-                    edgecolor='none'
-                )
+                if UMAP_PARAMS['n_components'] == 2:
+                    ax.scatter(
+                        X_umap[:, 0],
+                        X_umap[:, 1],
+                        s=20,
+                        color='lightgray',
+                        alpha=0.4,
+                        edgecolor='none'
+                    )
 
-                # only plot the points of this class
-                mask = (y == lab)
-                ax.scatter(
-                    X_umap[mask, 0],
-                    X_umap[mask, 1],
-                    s=30,
-                    alpha=0.8,
-                    edgecolor='k',
-                    linewidth=0.3,
-                    color=cmap5(int(lab)),
-                    label=f"KL Score {lab}"
-                )
+                    # only plot the points of this class
+                    mask = (y == lab)
+                    ax.scatter(
+                        X_umap[mask, 0],
+                        X_umap[mask, 1],
+                        s=30,
+                        alpha=0.8,
+                        edgecolor='k',
+                        linewidth=0.3,
+                        color=cmap5(int(lab)),
+                        label=f"KL Score {lab}"
+                    )
+
+                elif UMAP_PARAMS['n_components'] == 3:
+                    ax.scatter(
+                        X_umap[:, 0],
+                        X_umap[:, 1],
+                        X_umap[:, 2],
+                        s=20,
+                        color='lightgray',
+                        alpha=0.4,
+                        edgecolor='none'
+                    )
+
+                    # only plot the points of this class
+                    mask = (y == lab)
+                    ax.scatter(
+                        X_umap[mask, 0],
+                        X_umap[mask, 1],
+                        X_umap[mask, 2],
+                        s=30,
+                        alpha=0.8,
+                        edgecolor='k',
+                        linewidth=0.5,
+                        color=cmap5(int(lab)),
+                        label=f"KL Score {lab}"
+                    )
 
                 # set identical limits
                 ax.set_xlim(min_x-1, max_x+1)
                 ax.set_ylim(min_y-1, max_y+1)
+                if UMAP_PARAMS['n_components'] == 3:
+                    ax.set_zlim(min_z - 1, max_z + 1)
+                    ax.set_zlabel("UMAP 3")
 
                 # keep axes visible
                 ax.set_xlabel("UMAP 1")
@@ -209,63 +285,29 @@ if __name__ == "__main__":
                 ax.set_title(f"{model_name} — {'Test' if on_test else 'Train'}")
 
         # put a single legend in the top-right panel
-        axes[0, 1].legend(
-            loc="upper left",
-            bbox_to_anchor=(1.02, 1),
-            title="KL-Score",
-            frameon=False
-        )
+        # axes[0, 1].legend(
+        #     loc="upper left",
+        #     bbox_to_anchor=(1.02, 1),
+        #     title="KL-Score",
+        #     frameon=False
+        # )
+        if i == 0 and j == 1:
+            ax.legend(
+                loc="upper left",
+                bbox_to_anchor=(1.02, 1),
+                title="KL-Score",
+                frameon=False
+            )
+
 
         plt.tight_layout(rect=[0, 0, 0.95, 0.90])
 
         # save one file per label
         if AVERAGE:
-            out_file = os.path.join(SAVE_PATH, "umap_label" '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + str(UMAP_PARAMS['metric']) + f"_{STAGE}_{NEPOCH}_average_{lab}.png")
+            out_file = os.path.join(SAVE_PATH, "umap_label" '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + "lr_" + str(UMAP_PARAMS['learning_rate']) + '_' + 'ncomp' + str(UMAP_PARAMS['n_components']) +  '_' +(UMAP_PARAMS['init'] if UMAP_PARAMS['init'] != 'spectral' else '_')+ str(UMAP_PARAMS['metric']) + f"_{STAGE}_{NEPOCH}_average_{lab}.png")
         else:
-            out_file = os.path.join(SAVE_PATH, "umap_label" '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + str(UMAP_PARAMS['metric']) + f"_{STAGE}_{NEPOCH}_{SEED}_{lab}.png")
+            out_file = os.path.join(SAVE_PATH, "umap_label" '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist']) + '_' + "lr_" + str(UMAP_PARAMS['learning_rate']) + '_' + 'ncomp' + str(UMAP_PARAMS['n_components']) +  '_' + (UMAP_PARAMS['init'] if UMAP_PARAMS['init'] != 'spectral' else '_')+ str(UMAP_PARAMS['metric']) + f"_{STAGE}_{NEPOCH}_{SEED}_{lab}.png")
         fig.savefig(out_file, dpi=150)
         plt.close(fig)
 
-        # for (model_name, on_test), (X_umap, y) in embeddings.items():
-        #     split_name = 'test' if on_test else 'train'
-        #     out_dir   = os.path.join(SAVE_PATH, "per_label")
-        #     os.makedirs(out_dir, exist_ok=True)
-
-        # for lab in sorted(set(y)):
-        #     fig, ax = plt.subplots(figsize=(6,6))
-
-        #     # 1) plot everything in light gray
-        #     ax.scatter(
-        #         X_umap[:,0],
-        #         X_umap[:,1],
-        #         s=10,
-        #         color='lightgray',
-        #         alpha=0.4,
-        #         edgecolor='none'
-        #     )
-
-        #     # 2) overplot only this label in its true color
-        #     mask = (y == lab)
-        #     ax.scatter(
-        #         X_umap[mask,0],
-        #         X_umap[mask,1],
-        #         s=30,
-        #         color=cmap5(int(lab)),
-        #         edgecolor='k',
-        #         linewidth=0.4,
-        #         alpha=0.8,
-        #         label=f"Label {lab}"
-        #     )
-
-            # ax.set_title(f"{model_name} – {split_name} – label {lab}", fontsize=14)
-            # ax.set_xlabel("UMAP 1");  ax.set_ylabel("UMAP 2")
-            # ax.legend(loc='upper right', frameon=False)
-
-            # # optional: keep same x/y limits across all labels
-            # ax.set_xlim(min_x, max_x)
-            # ax.set_ylim(min_y, max_y)
-
-            # plt.tight_layout()
-            # fname = os.path.join(out_dir, f"{model_name}_{split_name}_label_{lab}.png")
-            # fig.savefig(fname, dpi=150)
-            # plt.close(fig)
+        

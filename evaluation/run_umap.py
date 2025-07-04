@@ -23,7 +23,7 @@ UMAP_PARAMS = {
     'min_dist': 0.1,
     'learning_rate': 1.0,
     'random_state': int(seed),
-    'n_components': 2,
+    'n_components': 3,
 }
 
 
@@ -97,7 +97,7 @@ if __name__=="__main__":
 
     if on_test_set:
         plt.savefig(os.path.join(SAVE_PATH, MODEL_NAME + '_' + DATA_TYPE + '_' + STAGE + '_' + NEPOCH + '_' + seed + '_' + 'n_neighbors' + '_' + str(UMAP_PARAMS['n_neighbors']) +'_' + 'min_dist' +'_' + str(UMAP_PARAMS['min_dist'])
-                             +'_' + str(UMAP_PARAMS['metric']) +'_' + 'testset' +'_comparison.png'))
+                             +'_' + "lr_" + str(UMAP_PARAMS['learning_rate']) + '_' + 'ncomp' + str(UMAP_PARAMS['n_components']) + '_' + str(UMAP_PARAMS['metric']) +'_' + 'testset' +'_comparison.png'))
     else:
         plt.savefig(os.path.join(SAVE_PATH, MODEL_NAME + '_' + DATA_TYPE + '_' + STAGE + '_' + NEPOCH + '_' + seed +'_' + 'n_neighbors' +'_' + str(UMAP_PARAMS['n_neighbors']) + '_' +'min_dist' +'_' + str(UMAP_PARAMS['min_dist'])
-                                +'_' + str(UMAP_PARAMS['metric']) +'_comparison.png'))
+                                +'_' +"lr_" + str(UMAP_PARAMS['learning_rate']) + '_' + 'ncomp' + str(UMAP_PARAMS['n_components']) + '_'+ str(UMAP_PARAMS['metric']) +'_comparison.png'))
