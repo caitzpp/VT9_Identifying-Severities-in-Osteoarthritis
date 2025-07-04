@@ -87,6 +87,7 @@ def load_features(model_name, on_test_set: bool, average = False, label_data_pat
 
         X = np.array(X_cleaned)
         y = np.array(y_cleaned)
+        #TODO: add logic for nan values and for missing labels
 
         # try:
         #     y = [filename_to_label[os.path.basename(f)] for f in file_paths]
@@ -132,8 +133,8 @@ if __name__ == "__main__":
             # update global bounds
             min_x = min(min_x, X_umap[:,0].min())
             max_x = max(max_x, X_umap[:,0].max())
-            min_y = min(min_y, X_umap[:,1].min())
-            max_y = max(max_y, X_umap[:,1].max())
+            # min_y = min(min_y, X_umap[:,1].min())
+            # max_y = max(max_y, X_umap[:,1].max())
             if UMAP_PARAMS['n_components'] == 3:
                 min_z, max_z = min(min_z, X_umap[:, 2].min()), max(max_z, X_umap[:, 2].max())
 
@@ -191,7 +192,7 @@ if __name__ == "__main__":
 
             # enforce the same limits everywhere
             ax.set_xlim(min_x-1, max_x+1)
-            ax.set_ylim(min_y-1, max_y+1)
+            # ax.set_ylim(min_y-1, max_y+1)
             if UMAP_PARAMS['n_components'] == 3:
                 ax.set_zlim(min_z - 1, max_z + 1)
                 ax.set_zlabel("UMAP 3")
@@ -306,7 +307,7 @@ if __name__ == "__main__":
 
                 # set identical limits
                 ax.set_xlim(min_x-1, max_x+1)
-                ax.set_ylim(min_y-1, max_y+1)
+                # ax.set_ylim(min_y-1, max_y+1)
                 if UMAP_PARAMS['n_components'] == 3:
                     ax.set_zlim(min_z - 1, max_z + 1)
                     ax.set_zlabel("UMAP 3")
