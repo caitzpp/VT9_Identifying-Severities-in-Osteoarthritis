@@ -1,5 +1,8 @@
 import os
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import sys
 from matplotlib.colors import ListedColormap
 from umap import UMAP
 import config
@@ -12,7 +15,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 STAGE       = 'ss'
 NEPOCH      = '400'
 MODELS      = ['mod_st', 
-               'mod_2'
+               #'mod_2'
                ]
 SEED        = '34'
 AVERAGE = True
@@ -21,6 +24,8 @@ SCALER = StandardScaler()
 DATA_PATH   = config.FEATURE_PATH
 DATA_PATH = os.path.dirname(DATA_PATH)
 DATA_PATH = os.path.join(DATA_PATH, "features")
+PROC_DATA_PATH = config.PROC_DATA_PATH2
+csv_foldername, csv_filename = "2025-07-03_data_exploration", "inmodi_data_personalinformation_unpivoted.csv"
 
 SAVE_PATH   = os.path.join(config.OUTPUT_PATH, "UMAP", "img")
 os.makedirs(SAVE_PATH, exist_ok=True)
@@ -47,7 +52,7 @@ cmap5 = ListedColormap(colors)
 # -------------------------------------------------------------------
 # HELPER
 # -------------------------------------------------------------------
-def load_features(model_name, on_test_set: bool, average = False):
+def load_features(model_name, on_test_set: bool, average = False, label_data_path = None, filename_column = "file_name", label_column = "pain"):
     """Find the one folder matching model_name, epoch, seed, then load train/test npy."""
     base_dir = os.path.join(DATA_PATH, STAGE)
     all_dirs = os.listdir(base_dir)
@@ -65,15 +70,38 @@ def load_features(model_name, on_test_set: bool, average = False):
     if len(folder) != 1:
         raise ValueError(f"Found {folder} for {model_name}")
     feat_dir = os.path.join(base_dir, folder[0], 'test' if on_test_set else 'train')
-    X, y = load_npy_folder_as_array(feat_dir)
+    X, y, file_paths = load_npy_folder_as_array(feat_dir)
+
+    if label_data_path is not None:
+        if filename_column is None or label_column is None:
+            raise ValueError("If label_data_path is provided, filename_column and label_column must also be provided.")
+
+        label_df = pd.read_csv(label_data_path)
+        filename_to_label = dict(zip(label_df[filename_column], label_df[label_column]))
+        X_cleaned, y_cleaned = [], []
+        for xi, f in zip(X, file_paths):
+            file_name = os.path.basename(f)
+            if file_name in filename_to_label:
+                X_cleaned.append(xi)
+                y_cleaned.append(filename_to_label[file_name])
+
+        X = np.array(X_cleaned)
+        y = np.array(y_cleaned)
+
+        # try:
+        #     y = [filename_to_label[os.path.basename(f)] for f in file_paths]
+        # except KeyError as e:
+            
+        #     raise ValueError(f"File {e} from your data folder is missing in the label CSV.")
+            
     return X, y
 
 if __name__ == "__main__":
     embeddings = {}
     min_x = float('inf')
     max_x = -float('inf')
-    min_y = float('inf')
-    max_y = -float('inf')
+    # min_y = float('inf')
+    # max_y = -float('inf')
     min_z, max_z = float('inf'), -float('inf') if UMAP_PARAMS['n_components'] == 3 else (0, 0)
 
     # fig, axes = plt.subplots(
@@ -89,7 +117,12 @@ if __name__ == "__main__":
     for i, model_name in enumerate(MODELS):
         for j, on_test in enumerate((False, True)):
             ax = fig.add_subplot(len(MODELS), 2, i * 2 + j + 1, projection='3d' if UMAP_PARAMS['n_components'] == 3 else None)
-            X, y = load_features(model_name, on_test, average=AVERAGE)
+            if PROC_DATA_PATH is None:
+                X, y = load_features(model_name, on_test, average=AVERAGE)
+            elif PROC_DATA_PATH is not None:
+                label_data_path = os.path.join(PROC_DATA_PATH, csv_foldername, csv_filename)
+                X, y = load_features(model_name, on_test, average=AVERAGE, label_data_path=label_data_path, filename_column="file_name", label_column="pain")
+
             if wScaler:
                 X = SCALER.fit_transform(X)
                 

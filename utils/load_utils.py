@@ -17,6 +17,7 @@ def load_image_folder_as_array(folder, image_size=(64, 64)):
 def load_npy_folder_as_array(folder, flatten=True):
     X = []
     y = []
+    file_paths = []
 
     for label_folder in sorted(Path(folder).iterdir()):
         if label_folder.is_dir():
@@ -29,7 +30,8 @@ def load_npy_folder_as_array(folder, flatten=True):
 
                 X.append(arr)
                 y.append(int(label))
+                file_paths.append(str(npy_path))
 
-    return np.array(X), np.array(y)
+    return np.array(X), np.array(y), file_paths
 def load_image(img):
     return Image.open(img)

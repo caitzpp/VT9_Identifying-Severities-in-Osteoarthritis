@@ -7,6 +7,7 @@ DEBUG = os.getenv("DEBUG", "False")
 DATA_PATH = os.getenv("DATA_PATH", "./data")
 RAW_DATA_PATH = os.path.join(DATA_PATH, "raw")
 PROC_DATA_PATH = os.path.join(DATA_PATH, "processed")
+PROC_DATA_PATH2 = os.getenv("PROC_DATA_PATH", PROC_DATA_PATH)
 OUTPUT_PATH = os.getenv("OUTPUT_PATH", "./outputs")
 
 SCHULTHESS_DATAFOLDER = os.getenv("SCHULTHESS_DATAFOLDER", "images_knee")
