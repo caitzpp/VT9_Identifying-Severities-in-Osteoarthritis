@@ -37,7 +37,7 @@ def check_duplicate_rows(df, column = 'record_id'):
         print(f"No duplicate rows based on {column}.")
         return None
     
-def investigate_data(df, save_path = None, save_name = None):
+def investigate_data(df, id_col = 'record_id', save_path = None, save_name = None):
     df_descr = df.describe(include='all')
 
     if save_path:
@@ -59,13 +59,13 @@ def investigate_data(df, save_path = None, save_name = None):
 
     if len(nan_columns) > 0:
         nan_df = df[df.isnull().any(axis=1)]
-        nan_patient_id = nan_df['record_id'].unique()
+        nan_patient_id = nan_df[id_col].unique()
         display(nan_df)
         print()
-        _ = check_duplicate_rows(df, column='record_id')
+        _ = check_duplicate_rows(df, column=id_col)
         return nan_patient_id
     else:
-        _ = check_duplicate_rows(df, column='record_id')
+        _ = check_duplicate_rows(df, column=id_col)
         
 def plot_hist(df, column, title = None, xlabel = None, y_label = "Frequency", stat = 'frequency', figsize=(10, 6), hue= None, multiple='dodge', bins = 30, kde=False):
     plt.figure(figsize=figsize)
