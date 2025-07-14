@@ -132,3 +132,12 @@ def scatterplot(df, x_list, y, hue = None, title = None, xlabel = None, ylabel =
     if savepath is not None:
         plt.savefig(os.path.join(savepath, f"{y}_scores_hue_scatterplot.png"), bbox_inches='tight')
     plt.show()
+
+def missing_from_df(df1, df2, df1_id, df2_id):
+    df1_clean = df1[df1[df1_id].notna()]
+    df2_clean = df2[df2[df2_id].notna()]
+    
+    missing_from_df1 = df2_clean[~df2_clean[df2_id].isin(df1_clean[df1_id])]
+    missing_from_df2 = df1_clean[~df1_clean[df1_id].isin(df2_clean[df2_id])]
+    
+    return missing_from_df1, missing_from_df2
