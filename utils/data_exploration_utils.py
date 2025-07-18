@@ -130,7 +130,7 @@ def scatterplot(df, x_list, y, hue = None, title = None, xlabel = None, ylabel =
 
     plt.tight_layout(rect=[0, 0, 0.9, 1])
     if savepath is not None:
-        plt.savefig(os.path.join(savepath, f"{y}_scores_hue_scatterplot.png"), bbox_inches='tight')
+        plt.savefig(os.path.join(savepath, f"{y}_scores_hue_{hue}_scatterplot.png"), bbox_inches='tight')
     plt.show()
 
 def missing_from_df(df1, df2, df1_id, df2_id):
