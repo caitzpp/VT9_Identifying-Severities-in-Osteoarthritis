@@ -82,4 +82,4 @@ def plot_hdbscan(X, labels, probabilities=None, parameters=None, ground_truth=Fa
     plt.tight_layout()
     if save_path is not None:
         plt.savefig(save_path)
-        plt.show()
+       # plt.show()
