@@ -1,6 +1,7 @@
 from pathlib import Path
 from PIL import Image
 import numpy as np
+import pandas as pd
 
 def load_image_folder_as_array(folder, image_size=(64, 64)):
     X = []
@@ -33,3 +34,27 @@ def load_npy_folder_as_array(folder, flatten=True):
     return np.array(X), np.array(y)
 def load_image(img):
     return Image.open(img)
+
+def fix_id(id_str):
+    if id_str.endswith('_l'):
+        return id_str[:-2] + '_left'
+    elif id_str.endswith('_r'):
+        return id_str[:-2] + '_right'
+    else:
+        return id_str 
+    
+
+
+def convert_numpy(obj):
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    elif isinstance(obj, (np.floating,)):
+        return float(obj)
+    elif isinstance(obj, (np.bool_,)):
+        return bool(obj)
+    elif isinstance(obj, pd.Series):
+        return obj.to_dict()  # or .tolist() if you prefer index-free
+    elif isinstance(obj, dict):
+        return {k: convert_numpy(v) for k, v in obj.items()}
+    else:
+        return obj  # already JSON-compatible

@@ -218,31 +218,32 @@ def create_scores_dataframe(path_to_anom_scores, files, metric):
     df.iloc[:,2:] = df.iloc[:,2:] / len(files)
     return df
 
-def get_metrics(df, score):
+def get_metrics(df, score, label = 'KL-Score'):
+    #'label' is ground truth
 
-    res = stats.spearmanr(df[score].tolist(), df['label'].tolist())
+    res = stats.spearmanr(df[score].tolist(), df[label].tolist())
 
     df['binary_label'] = 0
-    df.loc[df['label'] > 0, 'binary_label'] = 1
+    df.loc[df[label] > 0, 'binary_label'] = 1
     fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
     auc = metrics.auc(fpr, tpr)
 
 
     df['binary_label'] = 0
-    df.loc[df['label'] > 1, 'binary_label'] = 1
+    df.loc[df[label] > 1, 'binary_label'] = 1
 
     fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
     auc_mid = metrics.auc(fpr, tpr)
 
 
     df['binary_label'] = 0
-    df.loc[df['label'] > 2, 'binary_label'] = 1
+    df.loc[df[label] > 2, 'binary_label'] = 1
     fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
     auc_mid2 = metrics.auc(fpr, tpr)
 
 
     df['binary_label'] = 0
-    df.loc[df['label'] == 4, 'binary_label'] = 1
+    df.loc[df[label] == 4, 'binary_label'] = 1
     fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
     auc_sev = metrics.auc(fpr, tpr)
 

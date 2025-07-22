@@ -77,7 +77,8 @@ if __name__ == "__main__":
     else:
         df = pd.read_csv(os.path.join(proc_dir, folder, "inmodi_data_personalinformation.csv"))
     
-    df['id'] = df['record_id'].astype(str) + "_" + df['visit'].astype(str) + "_" + df['side'].astype(str)
+    df['id'] = (df['record_id'].astype(str) + "_" + df['visit'].astype(str) + "_" 
+                + df['side'].map({'l': 'left', 'r': 'right'}))
 
     df2 = df[cols].copy()
     print("Dataframe before dropping NaN values: ", df2.shape)
