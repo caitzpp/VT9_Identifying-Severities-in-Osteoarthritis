@@ -19,7 +19,7 @@ def get_unique_filepath(base_path):
 def save_results(df, clusterer, params, scaler, save_dir, filename, comment = None):
     df_filename = f"{filename}.csv"
     results_df = pd.DataFrame({
-                    'record_id': df['record_id'],
+                    'id': df['id'],
                     'cluster_label': clusterer.labels_,
                     'probability': clusterer.probabilities_,
                 })

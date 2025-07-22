@@ -28,13 +28,9 @@ os.makedirs(save_dir, exist_ok=True)
 folder = "2025-07-14_data_exploration"
 unpivoted = True
 
-if unpivoted:
-    df = pd.read_csv(os.path.join(proc_dir, folder, "inmodi_data_personalinformation_unpivoted.csv"))
-else:
-    df = pd.read_csv(os.path.join(proc_dir, folder, "inmodi_data_personalinformation.csv"))
-
 #Choose relevant columns
-cols = ['record_id', # id column
+cols = ['id',
+    #'record_id', # id column
             #'visit', 'side', 
             'pain', 
             'age', 
@@ -76,6 +72,13 @@ hdbscan_params_grid = {
 
 
 if __name__ == "__main__":
+    if unpivoted:
+        df = pd.read_csv(os.path.join(proc_dir, folder, "inmodi_data_personalinformation_unpivoted.csv"))
+    else:
+        df = pd.read_csv(os.path.join(proc_dir, folder, "inmodi_data_personalinformation.csv"))
+    
+    df['id'] = df['record_id'].astype(str) + "_" + df['visit'].astype(str) + "_" + df['side'].astype(str)
+
     df2 = df[cols].copy()
     print("Dataframe before dropping NaN values: ", df2.shape)
     df2 = df2.dropna(axis=0, how='any')
@@ -89,7 +92,7 @@ if __name__ == "__main__":
 
     df2_scaled = df2.copy()
     scaler = StandardScaler()
-    X = df2_scaled.drop(columns=['record_id'])
+    X = df2_scaled.drop(columns=['id'])
     X_scaled = scaler.fit_transform(X)
 
     umap_combos = list(product(*umap_params_grid.values()))

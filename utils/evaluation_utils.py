@@ -6,6 +6,7 @@ from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_fsco
 from scipy import stats
 import torch.nn.functional as F
 from scipy.ndimage.filters import uniform_filter1d
+from scipy.stats import entropy
 
 def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix, test_data=True):
     '''
@@ -463,3 +464,12 @@ def combine_results_with_std(
     print(f" • Severe AUC:     {means['sev_auc']:.3f}  ±  {stds['sev_auc']:.3f}")
 
     return dfm, means, stds
+
+
+
+def normalized_entropy(p):
+    p = np.array(p)
+    p = p / p.sum()  # normalize to probability distribution
+    raw_entropy = entropy(p, base=2)
+    max_entropy = np.log2(len(p)) if len(p) > 1 else 1  # avoid log2(1) = 0
+    return raw_entropy / max_entropy
