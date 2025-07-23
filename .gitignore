@@ -185,3 +185,4 @@ activate_conda.txt
 
 # Throwaway file that I use for troubleshooting
 notebooks/1_modality_specific/structured_data/troubleshooting.ipynb
+wandb/
