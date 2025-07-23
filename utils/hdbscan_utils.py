@@ -17,7 +17,7 @@ def get_unique_filepath(base_path):
         new_path = f"{base}_{counter}{ext}"
     return new_path
 
-def save_results(df, clusterer, params, scaler, save_dir, filename, comment = None, wandb= False):
+def save_results(df, clusterer, params, scaler, save_dir, filename, comment = None, use_wandb= False):
     df_filename = f"{filename}.csv"
     results_df = pd.DataFrame({
                     'id': df['id'],
@@ -36,13 +36,13 @@ def save_results(df, clusterer, params, scaler, save_dir, filename, comment = No
             'comment': comment,
         }
     
-    if wandb:
+    if use_wandb:
         wandb.log({
-            'df_savepath': df_savepath,
-            'params': params, #TODO log params one by one not within the wandb log
+            # 'df_savepath': df_savepath,
+            # 'params': params, #TODO log params one by one not within the wandb log
             'n_clusters': model_info['n_clusters'],
             #'centroids': model_info['centroids'],
-            'comment': comment
+            # 'comment': comment
         })
 
     model_info_filename = f"{filename}_model_info.json"
@@ -95,5 +95,5 @@ def plot_hdbscan(X, labels, probabilities=None, parameters=None, ground_truth=Fa
         plt.savefig(save_path)
        # plt.show()
 
-def merge_klscores(kl_df, df):
+# def merge_klscores(kl_df, df):
 

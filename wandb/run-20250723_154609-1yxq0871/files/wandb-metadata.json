@@ -1,0 +1,28 @@
+{
+  "os":  "Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "python":  "CPython 3.12.11",
+  "startedAt":  "2025-07-23T13:46:09.916561Z",
+  "program":  "/home/czuppinger/repo/VT9_Identifying-Severities-in-Osteoarthritis/src/hdbscan_clustering_tuning.py",
+  "codePath":  "src/hdbscan_clustering_tuning.py",
+  "codePathLocal":  "src/hdbscan_clustering_tuning.py",
+  "git":  {
+    "remote":  "https://github.com/caitzpp/VT9_Identifying-Severities-in-Osteoarthritis.git",
+    "commit":  "e5a79074610175b45d5c28ed89ab6a9387b89b8e"
+  },
+  "email":  "caitlyn.zuppinger@outlook.com",
+  "root":  "/home/czuppinger/repo/VT9_Identifying-Severities-in-Osteoarthritis",
+  "host":  "U349271",
+  "executable":  "/home/czuppinger/miniconda3/envs/mtenv/bin/python3",
+  "cpu_count":  6,
+  "cpu_count_logical":  12,
+  "disk":  {
+    "/":  {
+      "total":  "1081101176832",
+      "used":  "19346604032"
+    }
+  },
+  "memory":  {
+    "total":  "16616964096"
+  },
+  "writerId":  "oxc3v9gz422v7xaj488bdq9st3iszihv"
+}

@@ -167,7 +167,7 @@ if __name__ == "__main__":
     base_name, results_df = save_results(df2, clusterer, {
         'umap': umap_params,
         'hdbscan': hdbscan_params
-    }, scaler, save_dir_temp, filename, wandb=True)
+    }, scaler, save_dir_temp, filename, use_wandb=True)
 
     results_df['id'] = results_df['id'].apply(fix_id)
 
