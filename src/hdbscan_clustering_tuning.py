@@ -177,6 +177,7 @@ if __name__ == "__main__":
     results_df['id'] = results_df['id'].apply(fix_id)
 
     noise_count = (results_df['cluster_label']==-1).sum()
+    wandb.log({"noise_count": noise_count})
 
     df_filtered = results_df[results_df['cluster_label'] != -1]
     avg_probs = df_filtered.groupby('cluster_label')['probability'].mean().sort_values(ascending=False)
