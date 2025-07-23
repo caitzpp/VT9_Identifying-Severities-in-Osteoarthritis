@@ -1,0 +1,21 @@
+program: src/hdbscan_clustering_tuning.py
+name: sweepdemo
+method: random
+metric:
+  goal: maximize
+  name: avg_probs
+parameters:
+  n_neighbors:
+    values: [5, 10, 15, 30]
+  min_dist:
+    values: [0.01, 0.1, 0.3]
+  metric:
+    values: ['euclidean', 'cosine']
+  min_cluster_size:
+    values: [5, 10, 20]
+  min_samples:
+    values: [-1, 5, 10]
+  cluster_selection_method:
+    values: ['eom', 'leaf']
+  alpha:
+    values: [1.0, 1.5, 2.0]

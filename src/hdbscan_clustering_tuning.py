@@ -18,6 +18,17 @@ from scipy.stats import entropy
 from utils.load_utils import fix_id
 from utils.evaluation_utils import normalized_entropy, get_metrics
 
+import sys
+
+def get_next_run_folder(base_path):
+    i = 1
+    while True:
+        folder_name = f"run{i}"
+        full_path = os.path.join(base_path, folder_name)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+            return folder_name, full_path
+        i += 1
 
 today = datetime.date.today()
 
@@ -59,58 +70,70 @@ cols = ['id',
         'KOOS_qol'
     ]
 
-# umap_params_grid = {
-#     'n_neighbors': [5, 15],
-#     'min_dist': [0.1, 0.5],
-#     'n_components': [2],
-#     'metric': ['euclidean']
-# }
-
-# hdbscan_params_grid = {
-#     'min_cluster_size': [5, 10, 20],
-#     'min_samples': [None, 5, 10],
-#     'cluster_selection_method': ['eom', 'leaf'],
-#     'metric': ['euclidean'],
-#     'metric_params': [None],  # Default is None, can be adjusted for performance
-#     'max_cluster_size': [None], # None means no limit
-#     'cluster_selection_epsilon': [0.0],
-#     'algorithm': ['auto'],
-#     'leaf_size': [40],  # Default is 40, can be adjusted for performance
-#     'store_centers': ['centroid'],  # Not default, but want to keep
-#     'alpha': [1.0]  # Default is 1.0, can be adjusted for performance
-# }
-
-
 wandb.login(key=config.HDBSCAN_SYMP_WANDBAPI_KEY)
 
 if __name__ == "__main__":
-    wandb.init(
-        project="HDBSCAN_SymptomaticData",
-        config={
-            "umap": {
-                'n_neighbors': 5,
-                'min_dist': 0.1,
-                'n_components': 2,
-                'metric': 'euclidean'
-            },
-            "hdbscan": {
-                    'min_cluster_size': 5,
-                    'min_samples': None,
-                    'cluster_selection_method': 'eom',
-                    'metric': 'euclidean',
-                    'metric_params': None,
-                    'max_cluster_size': None,
-                    'cluster_selection_epsilon': 0.0,
-                    'algorithm': 'auto',
-                    'leaf_size': 40,
-                    'store_centers': 'centroid',
-                    'alpha': 1.0
-                }
-        })
-    wandb_config = wandb.config
+    run_folder_name, run_path = get_next_run_folder(save_dir)
 
-    umap_params = wandb_config.umap
-    hdbscan_params = wandb_config.hdbscan
+    run = wandb.init(
+        project="HDBSCAN_SymptomaticData",
+        # config={
+        #     "umap": {
+        #         'n_neighbors': 5,
+        #         'min_dist': 0.1,
+        #         'n_components': 2,
+        #         'metric': 'euclidean'
+        #     },
+        #     "hdbscan": {
+        #             'min_cluster_size': 5,
+        #             'min_samples': None,
+        #             'cluster_selection_method': 'eom',
+        #             'metric': 'euclidean',
+        #             'metric_params': None,
+        #             'max_cluster_size': None,
+        #             'cluster_selection_epsilon': 0.0,
+        #             'algorithm': 'auto',
+        #             'leaf_size': 40,
+        #             'store_centers': 'centroid',
+        #             'alpha': 1.0
+        #         }
+        # }
+        name = f"{os.path.basename(save_dir)}_{run_folder_name}"
+        )
+    wandb_config = wandb.config
+    
+    umap_keys = ['n_neighbors', 'min_dist', 'n_components', 'metric']
+    hdbscan_keys = ['min_cluster_size', 'min_samples', 'cluster_selection_method', 
+                    'metric', 'metric_params', 'max_cluster_size',
+                    'cluster_selection_epsilon', 'algorithm', 'leaf_size',
+                    'store_centers', 'alpha']
+
+    umap_defaults = {
+        'n_neighbors': 15,
+        'min_dist': 0.1,
+        'n_components': 2,
+        'metric': 'euclidean'
+    }
+
+    hdbscan_defaults = {
+        'min_cluster_size': 10,
+        'min_samples': None,
+        'cluster_selection_method': 'eom',
+        'metric': 'euclidean',
+        'metric_params': None,
+        'max_cluster_size': None,
+        'cluster_selection_epsilon': 0.0,
+        'algorithm': 'auto',
+        'leaf_size': 40,
+        'store_centers': 'centroid',
+        'alpha': 1.0
+    }
+
+    umap_params = {k: wandb_config.get(f'umap.{k}', umap_defaults[k]) for k in umap_keys}
+    hdbscan_params = {k: wandb_config.get(f'hdbscan.{k}', hdbscan_defaults[k]) for k in hdbscan_keys}
+
+    if hdbscan_params['min_samples'] == -1:
+        hdbscan_params['min_samples'] = None
 
     if unpivoted:
         df = pd.read_csv(os.path.join(proc_dir, folder, "inmodi_data_personalinformation_unpivoted.csv"))
@@ -136,31 +159,13 @@ if __name__ == "__main__":
     X = df2_scaled.drop(columns=['id'])
     X_scaled = scaler.fit_transform(X)
 
-    # umap_combos = list(product(*umap_params_grid.values()))
-    # hdbscan_combos = list(product(*hdbscan_params_grid.values()))
-
-    run_id = 0
-
-    # for umap_vals in umap_combos:
-        # umap_params = dict(zip(umap_params_grid.keys(), umap_vals))
-        # #print(umap_params)
-
     X_umap = UMAP(**umap_params).fit_transform(X_scaled)
 
-        # for hdb_vals in hdbscan_combos:
-        #     hdbscan_params = dict(zip(hdbscan_params_grid.keys(), hdb_vals))
-        #     #print(hdbscan_params)
     clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
-
-            # print(f"Run ID: {run_id}, UMAP Params: {umap_params}, HDBSCAN Params: {hdbscan_params}")
-
-            # # Save results
-            # run_id += 1
-            # save_folder = f"run_{run_id}_umap_{umap_vals}_hdbscan_{hdb_vals}".replace(" ", "")
-            # filename = f"run_{run_id}_umap_hdbscan_scaled"
     
-    save_folder = f"test_umap_hdbscan".replace(" ", "")
-    filename = f"test_umap_hdbscan_scaled"
+    #need to get a better name here
+    save_folder = run_folder_name
+    filename = f"{run.name}_umap_hdbscan_scaled"
 
     save_dir_temp = os.path.join(save_dir, save_folder)
     os.makedirs(save_dir_temp, exist_ok=True)
