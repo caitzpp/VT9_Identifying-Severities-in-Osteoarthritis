@@ -23,3 +23,5 @@ PATH_TO_ANOM = os.path.join(RESULTS_PATH, "dfs")
 PATH_TO_RESULTS = os.path.join(RESULTS_PATH, "results")
 FEATURE_PATH = os.path.join(RESULTS_PATH, "features")
 DIR_PATH = os.getenv("DIR_PATH", "./SS-FewSOME_Disease_Severity_Knee_Osteoarthritis")
+
+HDBSCAN_SYMP_WANDBAPI_KEY = os.getenv("HDBSCAN_SYMP_WANDBAPI_KEY", "")

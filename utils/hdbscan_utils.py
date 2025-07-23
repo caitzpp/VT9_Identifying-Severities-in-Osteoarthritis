@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import wandb
 
 def get_unique_filepath(base_path):
     """If file exists, append _2, _3, etc. until unique."""
@@ -16,7 +17,7 @@ def get_unique_filepath(base_path):
         new_path = f"{base}_{counter}{ext}"
     return new_path
 
-def save_results(df, clusterer, params, scaler, save_dir, filename, comment = None):
+def save_results(df, clusterer, params, scaler, save_dir, filename, comment = None, wandb= False):
     df_filename = f"{filename}.csv"
     results_df = pd.DataFrame({
                     'id': df['id'],
@@ -34,11 +35,21 @@ def save_results(df, clusterer, params, scaler, save_dir, filename, comment = No
             'centroids': clusterer.centroids_.tolist(),
             'comment': comment,
         }
+    
+    if wandb:
+        wandb.log({
+            'df_savepath': df_savepath,
+            'params': params, #TODO log params one by one not within the wandb log
+            'n_clusters': model_info['n_clusters'],
+            #'centroids': model_info['centroids'],
+            'comment': comment
+        })
+
     model_info_filename = f"{filename}_model_info.json"
     model_info_savepath = get_unique_filepath(os.path.join(save_dir, model_info_filename))
     with open(model_info_savepath, 'w') as f:
         json.dump(model_info, f, indent=4)
-    return os.path.basename(df_savepath).split('.')[0]
+    return os.path.basename(df_savepath).split('.')[0], results_df
 
 def plot_hdbscan(X, labels, probabilities=None, parameters=None, ground_truth=False, ax=None, save_path = None):
     if ax is None:
@@ -83,3 +94,6 @@ def plot_hdbscan(X, labels, probabilities=None, parameters=None, ground_truth=Fa
     if save_path is not None:
         plt.savefig(save_path)
        # plt.show()
+
+def merge_klscores(kl_df, df):
+
