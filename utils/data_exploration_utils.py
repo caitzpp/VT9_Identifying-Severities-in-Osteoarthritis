@@ -133,6 +133,56 @@ def scatterplot(df, x_list, y, hue = None, title = None, xlabel = None, ylabel =
         plt.savefig(os.path.join(savepath, f"{y}_scores_hue_{hue}_scatterplot.png"), bbox_inches='tight')
     plt.show()
 
+def barplots(df, y_list, x, hue=None, title=None, xlabel=None, ylabel=None, figsize=(6, 4), savepath=None, order=None):
+    n = len(y_list)
+    n_cols = 2
+    n_rows = math.ceil(n / n_cols)
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0] * n_cols, figsize[1] * n_rows), sharex=False, sharey=False)
+    
+    if isinstance(axes, np.ndarray):
+        axes = axes.flatten()
+    else:
+        axes = np.array([axes])
+
+    handles, labels = None, None
+
+    for i, y in enumerate(y_list):
+        ax = axes[i]
+        if hue:
+            sns.barplot(
+                data=df, x=x, y=y, hue=hue, ax=ax, legend=False,
+                order=order if order is not None else sorted(df[x].dropna().unique())
+            )
+        else: 
+            sns.barplot(
+                data=df, x=x, y=y, ax=ax,
+                order=order if order is not None else sorted(df[x].dropna().unique())
+            )
+        
+        ax.set_title(f"{y} by {x}", fontsize=12)
+        ax.set_xlabel(xlabel if xlabel else x, fontsize=10)
+        ax.set_ylabel(ylabel if ylabel else y, fontsize=10)
+        ax.tick_params(axis='x', rotation=45)
+        ax.grid(True, axis='y', linestyle='--', alpha=0.5)
+
+        if hue and handles is None:
+            handles, labels = ax.get_legend_handles_labels()
+
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    if hue and handles:
+        fig.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+
+    if title:
+        fig.suptitle(title, fontsize=14)
+
+    plt.tight_layout(rect=[0, 0, 0.9, 1])
+    if savepath is not None:
+        plt.savefig(os.path.join(savepath, f"{x}_scores_hue_{hue}_barplots.png"), bbox_inches='tight')
+    plt.show()
+    
 def missing_from_df(df1, df2, df1_id, df2_id):
     df1_clean = df1[df1[df1_id].notna()]
     df2_clean = df2[df2[df2_id].notna()]
