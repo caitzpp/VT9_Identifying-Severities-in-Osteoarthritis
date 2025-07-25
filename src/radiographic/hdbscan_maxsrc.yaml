@@ -1,0 +1,34 @@
+program: src/radiographic/hdbscan_wUMAP.py
+name: max_spearman_woUMAP
+project: HDBSCAN_RadiographicData
+method: random
+metric:
+  goal: maximize
+  name: spearman_correlation
+parameters:
+  stage:
+    values: ['ss']
+  data_type:
+    values: ['features']
+  n_epochs:
+    values: [400]
+  model_name:
+    values: ['mod_st']
+  seed:
+    values: ['34']
+  on_test_set:
+    values: [False]
+  n_neighbors:
+    values: [10]
+  min_dist:
+    values: [0.1]
+  metric:
+    values: ['euclidean', 'cosine']
+  min_cluster_size:
+    values: [5, 10, 20]
+  min_samples:
+    values: [-1, 5, 10]
+  cluster_selection_method:
+    values: ['eom', 'leaf']
+  alpha:
+    values: [1.0, 1.5, 2.0]

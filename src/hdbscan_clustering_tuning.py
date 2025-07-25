@@ -15,20 +15,10 @@ from umap import UMAP
 from sklearn.cluster import HDBSCAN
 from sklearn.metrics import normalized_mutual_info_score
 from scipy.stats import entropy
-from utils.load_utils import fix_id
+from utils.load_utils import fix_id, get_next_run_folder
 from utils.evaluation_utils import normalized_entropy, get_metrics
 
 import sys
-
-def get_next_run_folder(base_path):
-    i = 1
-    while True:
-        folder_name = f"run{i}"
-        full_path = os.path.join(base_path, folder_name)
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
-            return folder_name, full_path
-        i += 1
 
 today = datetime.date.today()
 
@@ -101,6 +91,8 @@ if __name__ == "__main__":
         name = f"{os.path.basename(save_dir)}_{run_folder_name}"
         )
     wandb_config = wandb.config
+
+    wUMAP = wandb_config.get('wUMAP', True)
     
     umap_keys = ['n_neighbors', 'min_dist', 'n_components', 'metric']
     hdbscan_keys = ['min_cluster_size', 'min_samples', 'cluster_selection_method', 
@@ -129,7 +121,10 @@ if __name__ == "__main__":
         'alpha': 1.0
     }
 
-    umap_params = {k: wandb_config.get(f'umap.{k}', umap_defaults[k]) for k in umap_keys}
+    if wUMAP:
+        umap_params = {k: wandb_config.get(f'umap.{k}', umap_defaults[k]) for k in umap_keys}
+    else:
+        umap_params = "woUMAP"
     hdbscan_params = {k: wandb_config.get(f'hdbscan.{k}', hdbscan_defaults[k]) for k in hdbscan_keys}
 
     if hdbscan_params['min_samples'] == -1:
@@ -159,7 +154,10 @@ if __name__ == "__main__":
     X = df2_scaled.drop(columns=['id'])
     X_scaled = scaler.fit_transform(X)
 
-    X_umap = UMAP(**umap_params).fit_transform(X_scaled)
+    if wUMAP:
+        X_umap = UMAP(**umap_params).fit_transform(X_scaled)
+    else:
+        X_umap = X_scaled
 
     clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
     

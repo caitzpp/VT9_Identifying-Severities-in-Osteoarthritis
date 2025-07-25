@@ -2,6 +2,7 @@ from pathlib import Path
 from PIL import Image
 import numpy as np
 import pandas as pd
+import _osx_support
 
 def load_image_folder_as_array(folder, image_size=(64, 64)):
     X = []
@@ -58,3 +59,13 @@ def convert_numpy(obj):
         return {k: convert_numpy(v) for k, v in obj.items()}
     else:
         return obj  # already JSON-compatible
+    
+def get_next_run_folder(base_path):
+    i = 1
+    while True:
+        folder_name = f"run{i}"
+        full_path = os.path.join(base_path, folder_name)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+            return folder_name, full_path
+        i += 1

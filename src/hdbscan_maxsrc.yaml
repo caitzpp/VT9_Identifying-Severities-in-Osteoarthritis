@@ -1,14 +1,16 @@
 program: src/hdbscan_clustering_tuning.py
-name: max_avgprobs
+name: max_spearman
 method: random
 metric:
   goal: maximize
-  name: avg_probs
+  name: spearman_correlation
 parameters:
+  wUMAP:
+    values: [True]
   n_neighbors:
-    values: [5, 10, 15, 30]
+    values: [10]
   min_dist:
-    values: [0.01, 0.1, 0.3]
+    values: [0.1]
   metric:
     values: ['euclidean', 'cosine']
   min_cluster_size:

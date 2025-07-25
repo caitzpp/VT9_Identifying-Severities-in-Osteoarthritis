@@ -1,6 +1,6 @@
 program: src/hdbscan_clustering_tuning.py
 name: min_noisecount
-method: grid
+method: random
 metric:
   goal: minimize
   name: noise_count
