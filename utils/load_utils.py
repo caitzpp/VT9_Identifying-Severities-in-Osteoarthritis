@@ -2,7 +2,7 @@ from pathlib import Path
 from PIL import Image
 import numpy as np
 import pandas as pd
-import _osx_support
+import os
 
 def load_image_folder_as_array(folder, image_size=(64, 64)):
     X = []
