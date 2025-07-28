@@ -142,12 +142,12 @@ if __name__ == "__main__":
 
     save_dir_temp = os.path.join(save_dir, save_folder)
     os.makedirs(save_dir_temp, exist_ok=True)
-    base_name, results_df = save_results(df2, clusterer, {
+    base_name, results_df = save_results(df=df2, clusterer=clusterer, params={
         'umap': umap_params,
         'hdbscan': hdbscan_params
-    }, scaler, save_dir_temp, filename, id = 'name', use_wandb=True)
+    }, scaler=scaler, save_dir=save_dir_temp, filename=filename, id = 'name', use_wandb=True)
 
-    results_df['name'] = results_df['name'].apply(fix_id)
+    results_df['id'] = results_df['id'].apply(fix_id)
 
     noise_count = (results_df['cluster_label']==-1).sum()
     wandb.log({"noise_count": noise_count})
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
     # kl_df = pd.read_csv(kl_filepath)
 
-    df_merged = df_filtered.merge(df, on = 'name', how='left', validate='one_to_one')
+    df_merged = df_filtered.merge(df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
     wandb.log({"missing_kl_scores": len(df_merged[df_merged['KL-Score'].isna()])})
 
     df_merged.to_csv(os.path.join(save_dir_temp, f"{base_name}_wKL.csv"), index=False)
