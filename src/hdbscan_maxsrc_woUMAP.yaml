@@ -7,17 +7,13 @@ metric:
 parameters:
   wUMAP:
     values: [False]
-  n_neighbors:
-    values: [10]
-  min_dist:
-    values: [0.1]
-  metric:
-    values: ['euclidean', 'cosine']
-  min_cluster_size:
+  hdbscan.min_cluster_size:
     values: [5, 10, 20]
-  min_samples:
+  hdbscan.min_samples:
     values: [-1, 5, 10]
-  cluster_selection_method:
+  hdbscan.cluster_selection_method:
     values: ['eom', 'leaf']
-  alpha:
+  hdbscan.alpha:
     values: [1.0, 1.5, 2.0]
+  hdbscan.metric:
+    values: ['euclidean']
