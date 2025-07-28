@@ -7,13 +7,15 @@ import numpy as np
 from IPython.display import display
 from itertools import product
 import datetime
-from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan
+from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan
 
 from sklearn.preprocessing import StandardScaler
 #import hdbscan
 from umap import UMAP
 from sklearn.cluster import HDBSCAN
 from sklearn.metrics import normalized_mutual_info_score
+from sklearn.model_selection import StratifiedKFold
+from sklearn.utils import shuffle
 from scipy.stats import entropy
 from utils.load_utils import fix_id, get_next_run_folder
 from utils.evaluation_utils import normalized_entropy, get_metrics
@@ -27,6 +29,9 @@ proc_dir = config.PROC_DATA_PATH
 
 #folder = '2025-07-18_hdbscan'
 folder = None
+
+random_state=42
+stratify_on = 'KL-Score'
 
 if folder is not None:
     save_dir = os.path.join(proc_dir, folder)
@@ -56,7 +61,8 @@ cols = ['name',
         'KOOS_symptoms', 
         'KOOS_sport', 
         'KOOS_adl', 
-        'KOOS_qol'
+        'KOOS_qol',
+        'KL-Score'
     ]
 
 wandb.login(key=config.HDBSCAN_SYMP_WANDBAPI_KEY)
@@ -72,6 +78,7 @@ if __name__ == "__main__":
 
     wUMAP = wandb_config.get('wUMAP', True)
     replace_NanValues = wandb_config.get('replace_NanValues', False)
+    k = wandb_config.get('k-cv', None)
     
     umap_keys = ['n_neighbors', 'min_dist', 'n_components', 'metric']
     hdbscan_keys = ['min_cluster_size', 'min_samples', 'cluster_selection_method', 
@@ -124,69 +131,93 @@ if __name__ == "__main__":
     df2['is_male'] = df['gender'].apply(lambda x: 1 if x=='male' else 0)
     df2 = df2.drop(columns= 'gender')
 
-    df2_scaled = df2.copy()
     scaler = StandardScaler()
-    X = df2_scaled.drop(columns=['name'])
-    X_scaled = scaler.fit_transform(X)
-
-    if wUMAP:
-        X_umap = UMAP(**umap_params).fit_transform(X_scaled)
-    else:
-        X_umap = X_scaled
-
-    clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
     
-    #need to get a better name here
+    X_umap, y, df2_scaled = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score')
+
+    kf = StratifiedKFold(n_splits=k, shuffle=True, random_state=random_state) if k is not None else None
+
     save_folder = run_folder_name
     filename = f"{run.name}_umap_hdbscan_scaled"
 
     save_dir_temp = os.path.join(save_dir, save_folder)
     os.makedirs(save_dir_temp, exist_ok=True)
-    base_name, results_df = save_results(df=df2, clusterer=clusterer, params={
-        'umap': umap_params,
-        'hdbscan': hdbscan_params
-    }, scaler=scaler, save_dir=save_dir_temp, filename=filename, id = 'name', use_wandb=True)
 
-    results_df['id'] = results_df['id'].apply(fix_id)
+    # if kf is not None:
+    #     for fold, (train_idx, test_idx) in enumerate(kf.split(X_umap, y)):
+    #         print(f"\n--- Fold {fold+1} ---")
+       
+    #         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    #         df_train, df_test = df.iloc[train_idx], df.iloc[test_idx]
 
-    noise_count = (results_df['cluster_label']==-1).sum()
-    wandb.log({"noise_count": noise_count})
 
-    df_filtered = results_df[results_df['cluster_label'] != -1]
-    avg_probs = df_filtered.groupby('cluster_label')['probability'].mean().sort_values(ascending=False)
-    wandb.log({"avg_probs": avg_probs.mean()})
-    avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
+    #need to get a better name here
+    # save_folder = run_folder_name
+    # filename = f"{run.name}_umap_hdbscan_scaled"
+
+    # save_dir_temp = os.path.join(save_dir, save_folder)
+    # os.makedirs(save_dir_temp, exist_ok=True)
+
+    if kf is None:
+        print("\n--- No cross-validation, training on full dataset ---")
+        clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
+
+        base_name, results_df = save_results(df=df2_scaled, clusterer=clusterer, params={
+            'umap': umap_params,
+            'hdbscan': hdbscan_params
+        }, scaler=scaler, save_dir=save_dir_temp, filename=filename, id='name', use_wandb=True)
+    
+        get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True)
+
+        # Plot the results
+        plot_hdbscan(X_umap, clusterer.labels_,
+                    probabilities=clusterer.probabilities_,
+                    save_path=os.path.join(save_dir_temp, f"{base_name}_plot.png"))
+    # base_name, results_df = save_results(df=df2, clusterer=clusterer, params={
+    #     'umap': umap_params,
+    #     'hdbscan': hdbscan_params
+    # }, scaler=scaler, save_dir=save_dir_temp, filename=filename, id = 'name', use_wandb=True)
+
+    # results_df['id'] = results_df['id'].apply(fix_id)
+
+    # noise_count = (results_df['cluster_label']==-1).sum()
+    # wandb.log({"noise_count": noise_count})
+
+    # df_filtered = results_df[results_df['cluster_label'] != -1]
+    # avg_probs = df_filtered.groupby('cluster_label')['probability'].mean().sort_values(ascending=False)
+    # wandb.log({"avg_probs": avg_probs.mean()})
+    # avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
             
-    p_dist = df_filtered['probability'] / np.sum(df_filtered['probability'])
-    membership_entropy = entropy(p_dist, base=2)
-    H_max = np.log2(len(p_dist))
+    # p_dist = df_filtered['probability'] / np.sum(df_filtered['probability'])
+    # membership_entropy = entropy(p_dist, base=2)
+    # H_max = np.log2(len(p_dist))
 
-    wandb.log({"entropy": membership_entropy,
-                "normalized_entropy": membership_entropy / H_max})
+    # wandb.log({"entropy": membership_entropy,
+    #             "normalized_entropy": membership_entropy / H_max})
             
-    entropy_per_cluster = df_filtered.groupby('cluster_label')['probability'].apply(
-                    normalized_entropy
-                ).sort_values()
-    entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster.csv"))
+    # entropy_per_cluster = df_filtered.groupby('cluster_label')['probability'].apply(
+    #                 normalized_entropy
+    #             ).sort_values()
+    # entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster.csv"))
 
-    # kl_df = pd.read_csv(kl_filepath)
+    # # kl_df = pd.read_csv(kl_filepath)
 
-    df_merged = df_filtered.merge(df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
-    wandb.log({"missing_kl_scores": len(df_merged[df_merged['KL-Score'].isna()])})
+    # df_merged = df_filtered.merge(df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
+    # wandb.log({"missing_kl_scores": len(df_merged[df_merged['KL-Score'].isna()])})
 
-    df_merged.to_csv(os.path.join(save_dir_temp, f"{base_name}_wKL.csv"), index=False)
-    df_merged = df_merged.dropna(subset=['KL-Score'])
-    spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_merged, score = 'cluster_label', label = 'KL-Score')
-    nmi = normalized_mutual_info_score(df_merged['KL-Score'], df_merged['cluster_label'])
+    # df_merged.to_csv(os.path.join(save_dir_temp, f"{base_name}_wKL.csv"), index=False)
+    # df_merged = df_merged.dropna(subset=['KL-Score'])
+    # spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_merged, score = 'cluster_label', label = 'KL-Score')
+    # nmi = normalized_mutual_info_score(df_merged['KL-Score'], df_merged['cluster_label'])
 
-    wandb.log({
-        "spearman_correlation": spr,
-        "auc": auc,
-        "auc_mid": auc_mid,
-        "auc_mid2": auc_mid2,
-        "auc_sev": auc_sev,
-        "nmi": nmi
-    })
+    # wandb.log({
+    #     "spearman_correlation": spr,
+    #     "auc": auc,
+    #     "auc_mid": auc_mid,
+    #     "auc_mid2": auc_mid2,
+    #     "auc_sev": auc_sev,
+    #     "nmi": nmi
+    # })
 
     plot_hdbscan(X_umap, clusterer.labels_, 
                 probabilities=clusterer.probabilities_, 
