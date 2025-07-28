@@ -17,10 +17,10 @@ def get_unique_filepath(base_path):
         new_path = f"{base}_{counter}{ext}"
     return new_path
 
-def save_results(df, clusterer, params, scaler, save_dir, filename, comment = None, use_wandb= False):
+def save_results(df, clusterer, params, scaler, save_dir, filename, id = 'id', comment = None, use_wandb= False):
     df_filename = f"{filename}.csv"
     results_df = pd.DataFrame({
-                    'id': df['id'],
+                    'id': df[id],
                     'cluster_label': clusterer.labels_,
                     'probability': clusterer.probabilities_,
                 })
