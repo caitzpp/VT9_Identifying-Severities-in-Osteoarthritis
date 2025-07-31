@@ -40,6 +40,7 @@ else:
 os.makedirs(save_dir, exist_ok=True)
 
 folder = "2025-07-28_data_exploration"
+df_filename = "inmodi_data_personalinformation_kl_woSC.csv"
 # kl_file = "inmodi_data_personalinformation_kl.csv"
 # kl_filepath = os.path.join(proc_dir, folder, kl_file)
 
@@ -115,7 +116,7 @@ if __name__ == "__main__":
     if hdbscan_params['min_samples'] == -1:
         hdbscan_params['min_samples'] = None
 
-    df = pd.read_csv(os.path.join(proc_dir, folder, "inmodi_data_personalinformation_kl_woSC.csv"))
+    df = pd.read_csv(os.path.join(proc_dir, folder, df_filename))
 
     df2 = df[cols].copy()
 
