@@ -71,7 +71,6 @@ if __name__ == "__main__":
     run_folder_name, run_path = get_next_run_folder(save_dir)
 
     run = wandb.init(
-        project="HDBSCAN_SymptomaticData",
         name = f"{os.path.basename(save_dir)}_{run_folder_name}"
         )
     wandb_config = wandb.config
@@ -219,8 +218,8 @@ if __name__ == "__main__":
     #     "nmi": nmi
     # })
 
-    plot_hdbscan(X_umap, clusterer.labels_, 
-                probabilities=clusterer.probabilities_, 
-                save_path=os.path.join(save_dir, f"{base_name}_plot.png"))
+    # plot_hdbscan(X_umap, clusterer.labels_, 
+    #             probabilities=clusterer.probabilities_, 
+    #             save_path=os.path.join(save_dir, f"{base_name}_plot.png"))
     
     wandb.finish()
