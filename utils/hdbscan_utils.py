@@ -150,7 +150,7 @@ def prep_data(df, scaler, umap_params = None, wUMAP = True, id_col='name', y_val
         return X_umap, y, df_scaled
 
 def train_fold(fold, train_idx, test_idx, X, y, df, hdbscan_params, umap_params, scaler,filename, save_dir_temp):
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    X_train, X_test = X[train_idx], X[test_idx]
     df_train, df_test = df.iloc[train_idx], df.iloc[test_idx]
 
     clusterer = HDBSCAN(**hdbscan_params).fit(X_train)
@@ -187,13 +187,15 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='clus
         spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_merged, score=score, label=label)
         nmi = normalized_mutual_info_score(df_merged[label], df_merged[score])
 
+        n_entropy = membership_entropy / H_max
+
         if use_wandb:
             wandb.log({
                 "fold": fold,
                 "noise_count": noise_count,
                 "avg_probs": avg_probs.mean(),
                 "entropy": membership_entropy,
-                "normalized_entropy": membership_entropy / H_max,
+                "normalized_entropy": n_entropy,
                 "missing_kl_scores": len(df_merged[df_merged[label].isna()]),
                 "spearman_correlation": spr,
                 "auc": auc,
@@ -202,7 +204,7 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='clus
                 "auc_sev": auc_sev,
                 "nmi": nmi
             })
-        return noise_count, avg_probs, membership_entropy, normalized_entropy, spr, auc, auc_mid, auc_mid2, auc_sev, nmi
+        return noise_count, avg_probs, membership_entropy, n_entropy, spr, auc, auc_mid, auc_mid2, auc_sev, nmi
     if fold is None:
         results_df['id'] = results_df['id'].apply(fix_id)
 
@@ -227,12 +229,14 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='clus
         spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_merged, score = score, label = label)
         nmi = normalized_mutual_info_score(df_merged[label], df_merged[score])
 
+        n_entropy = membership_entropy / H_max
+
         if use_wandb:
             wandb.log({
                 "noise_count": noise_count,
                 "avg_probs": avg_probs.mean(),
                 "entropy": membership_entropy,
-                "normalized_entropy": membership_entropy / H_max,
+                "normalized_entropy": n_entropy,
                 "missing_kl_scores": len(df_merged[df_merged[label].isna()]),
                 "spearman_correlation": spr,
                 "auc": auc,
