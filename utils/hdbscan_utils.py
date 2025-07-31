@@ -160,43 +160,84 @@ def train_fold(fold, train_idx, test_idx, X, y, df, hdbscan_params, umap_params,
         'hdbscan': hdbscan_params
     }, scaler=scaler, save_dir=save_dir_temp, filename=filename, id = 'name', use_wandb=True, fold=fold)
 
-    return base_name, results_df, clusterer, X_test, df_test
+    return base_name, results_df, clusterer, X_train, df_train, X_test, df_test
 
-def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True):
-    results_df['id'] = results_df['id'].apply(fix_id)
+def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True, fold = None):
+    if fold is not None:
+        results_df['id'] = results_df['id'].apply(fix_id)
 
-    noise_count = (results_df[score]==-1).sum()
+        noise_count = (results_df[score]==-1).sum()
 
-    df_filtered = results_df[results_df[score] != -1]
-    avg_probs = df_filtered.groupby(score)['probability'].mean().sort_values(ascending=False)
-    avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
-            
-    p_dist = df_filtered['probability'] / np.sum(df_filtered['probability'])
-    membership_entropy = entropy(p_dist, base=2)
-    H_max = np.log2(len(p_dist))
-            
-    entropy_per_cluster = df_filtered.groupby(score)['probability'].apply(
-                    normalized_entropy
-                ).sort_values()
-    entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster.csv"))
-    df_merged = df_filtered.merge(kl_df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
+        df_filtered = results_df[results_df[score] != -1]
+        avg_probs = df_filtered.groupby(score)['probability'].mean().sort_values(ascending=False)
+        avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_fold{fold}_avg_probs_per_cluster.csv"))
+                
+        p_dist = df_filtered['probability'] / np.sum(df_filtered['probability'])
+        membership_entropy = entropy(p_dist, base=2)
+        H_max = np.log2(len(p_dist))
+                
+        entropy_per_cluster = df_filtered.groupby(score)['probability'].apply(
+                        normalized_entropy
+                    ).sort_values()
+        entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_fold{fold}_entropy_per_cluster.csv"))
+        df_merged = df_filtered.merge(kl_df, left_on='id', right_on='name', how='left', validate='one_to_one')
 
-    df_merged.to_csv(os.path.join(save_dir_temp, f"{base_name}_wKL.csv"), index=False)
-    df_merged = df_merged.dropna(subset=[label])
-    spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_merged, score = score, label = label)
-    nmi = normalized_mutual_info_score(df_merged[label], df_merged[score])
+        df_merged.to_csv(os.path.join(save_dir_temp, f"{base_name}_fold{fold}_wKL.csv"), index=False)
+        df_merged = df_merged.dropna(subset=[label])
+        spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_merged, score=score, label=label)
+        nmi = normalized_mutual_info_score(df_merged[label], df_merged[score])
 
-    if use_wandb:
-        wandb.log({
-            "noise_count": noise_count,
-            "avg_probs": avg_probs.mean(),
-            "entropy": membership_entropy,
-            "normalized_entropy": membership_entropy / H_max,
-            "missing_kl_scores": len(df_merged[df_merged[label].isna()]),
-            "spearman_correlation": spr,
-            "auc": auc,
-            "auc_mid": auc_mid,
-            "auc_mid2": auc_mid2,
-            "auc_sev": auc_sev,
-            "nmi": nmi
-        })
+        if use_wandb:
+            wandb.log({
+                "fold": fold,
+                "noise_count": noise_count,
+                "avg_probs": avg_probs.mean(),
+                "entropy": membership_entropy,
+                "normalized_entropy": membership_entropy / H_max,
+                "missing_kl_scores": len(df_merged[df_merged[label].isna()]),
+                "spearman_correlation": spr,
+                "auc": auc,
+                "auc_mid": auc_mid,
+                "auc_mid2": auc_mid2,
+                "auc_sev": auc_sev,
+                "nmi": nmi
+            })
+        return noise_count, avg_probs, membership_entropy, normalized_entropy, spr, auc, auc_mid, auc_mid2, auc_sev, nmi
+    if fold is None:
+        results_df['id'] = results_df['id'].apply(fix_id)
+
+        noise_count = (results_df[score]==-1).sum()
+
+        df_filtered = results_df[results_df[score] != -1]
+        avg_probs = df_filtered.groupby(score)['probability'].mean().sort_values(ascending=False)
+        avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
+                
+        p_dist = df_filtered['probability'] / np.sum(df_filtered['probability'])
+        membership_entropy = entropy(p_dist, base=2)
+        H_max = np.log2(len(p_dist))
+                
+        entropy_per_cluster = df_filtered.groupby(score)['probability'].apply(
+                        normalized_entropy
+                    ).sort_values()
+        entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster.csv"))
+        df_merged = df_filtered.merge(kl_df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
+
+        df_merged.to_csv(os.path.join(save_dir_temp, f"{base_name}_wKL.csv"), index=False)
+        df_merged = df_merged.dropna(subset=[label])
+        spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_merged, score = score, label = label)
+        nmi = normalized_mutual_info_score(df_merged[label], df_merged[score])
+
+        if use_wandb:
+            wandb.log({
+                "noise_count": noise_count,
+                "avg_probs": avg_probs.mean(),
+                "entropy": membership_entropy,
+                "normalized_entropy": membership_entropy / H_max,
+                "missing_kl_scores": len(df_merged[df_merged[label].isna()]),
+                "spearman_correlation": spr,
+                "auc": auc,
+                "auc_mid": auc_mid,
+                "auc_mid2": auc_mid2,
+                "auc_sev": auc_sev,
+                "nmi": nmi
+            })

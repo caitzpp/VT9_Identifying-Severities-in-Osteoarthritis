@@ -7,7 +7,7 @@ import numpy as np
 from IPython.display import display
 from itertools import product
 import datetime
-from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan
+from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold
 
 from sklearn.preprocessing import StandardScaler
 #import hdbscan
@@ -18,7 +18,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.utils import shuffle
 from scipy.stats import entropy
 from utils.load_utils import fix_id, get_next_run_folder
-from utils.evaluation_utils import normalized_entropy, get_metrics
+#from utils.evaluation_utils import normalized_entropy, get_metrics
 
 import sys
 
@@ -172,7 +172,70 @@ if __name__ == "__main__":
         plot_hdbscan(X_umap, clusterer.labels_,
                     probabilities=clusterer.probabilities_,
                     save_path=os.path.join(save_dir_temp, f"{base_name}_plot.png"))
-    # base_name, results_df = save_results(df=df2, clusterer=clusterer, params={
+    elif kf is not None:
+        print("\n--- Cross-validation ---")
+
+        l_noise_count = []
+        l_avg_probs = []
+        l_entropy = []
+        l_normalized_entropy = []
+        l_spearman_correlation = []
+        l_auc = []
+        l_auc_mid = []
+        l_auc_mid2 = []
+        l_auc_sev = []
+        l_nmi = []
+        for fold, (train_idx, test_idx) in enumerate(kf.split(X_umap, y)):
+            print(f"\n--- Fold {fold+1} ---")
+            base_name, results_df, clusterer, X_train, df_train, _, _ = train_fold(fold=fold, 
+                                                                           train_idx=train_idx, 
+                                                                           test_idx=test_idx, 
+                                                                           X=X_umap, y=y, 
+                                                                           df=df2_scaled,
+                                                                           hdbscan_params=hdbscan_params,
+                                                                           umap_params=umap_params,
+                                                                           scaler=scaler,
+                                                                           filename=filename,
+                                                                           save_dir_temp=save_dir_temp)
+            noise_count, avg_probs, membership_entropy, normalized_entropy, spr, auc, auc_mid, auc_mid2, auc_sev, nmi = get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True, fold=fold)
+            l_noise_count.append(noise_count)
+            l_avg_probs.append(avg_probs)
+            l_entropy.append(membership_entropy)
+            l_normalized_entropy.append(normalized_entropy)
+            l_spearman_correlation.append(spr)
+            l_auc.append(auc)
+            l_auc_mid.append(auc_mid)
+            l_auc_mid2.append(auc_mid2)
+            l_auc_sev.append(auc_sev)
+            l_nmi.append(nmi)
+
+            plot_hdbscan(X_train, clusterer.labels_,
+                    probabilities=clusterer.probabilities_,
+                    save_path=os.path.join(save_dir_temp, f"{base_name}__{fold}_plot.png"))
+        
+        wandb.log({
+            "average_noise_count": np.mean(l_noise_count),
+            "average_avg_probs": np.mean(l_avg_probs),
+            "average_entropy": np.mean(l_entropy),
+            "average_normalized_entropy": np.mean(l_normalized_entropy),
+            "average_spearman_correlation": np.mean(l_spearman_correlation),
+            "average_auc": np.mean(l_auc),
+            "average_auc_mid": np.mean(l_auc_mid),
+            "average_auc_mid2": np.mean(l_auc_mid2),
+            "average_auc_sev": np.mean(l_auc_sev),
+            "average_nmi": np.mean(l_nmi),
+            "std_noise_count": np.std(l_noise_count),
+            "std_avg_probs": np.std(l_avg_probs),
+            "std_entropy": np.std(l_entropy),
+            "std_normalized_entropy": np.std(l_normalized_entropy),
+            "std_spearman_correlation": np.std(l_spearman_correlation),
+            "std_auc": np.std(l_auc),
+            "std_auc_mid": np.std(l_auc_mid),
+            "std_auc_mid2": np.std(l_auc_mid2),
+            "std_auc_sev": np.std(l_auc_sev),
+            "std_nmi": np.std(l_nmi)
+        })
+
     #     'umap': umap_params,
     #     'hdbscan': hdbscan_params
     # }, scaler=scaler, save_dir=save_dir_temp, filename=filename, id = 'name', use_wandb=True)

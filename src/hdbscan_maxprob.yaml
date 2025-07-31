@@ -27,5 +27,5 @@ parameters:
     values: [1.0, 1.5, 2.0]
   hdbscan.metric:
     values: ['euclidean']
-  # k-cv:
-  #   values: [5]
+  k-cv:
+    values: [5]
