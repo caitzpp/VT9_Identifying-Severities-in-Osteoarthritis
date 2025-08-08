@@ -1,7 +1,7 @@
 program: src/hdbscan_clustering_tuning.py
 project: StructuredData_HDBSCAN_Clustering_Filtered
 description: Using filtered data, taking into account that questionnaires were filled out on a patient/visit basis and not per knee. Values were simply filtered out.
-name: max_avgprobs
+name: max_avgprobs_woCV
 method: random
 metric:
   goal: maximize
@@ -27,5 +27,5 @@ parameters:
     values: [1.0, 1.5, 2.0]
   hdbscan.metric:
     values: ['euclidean']
-  k-cv:
-    values: [5]
+  # k-cv:
+  #   values: [5]
