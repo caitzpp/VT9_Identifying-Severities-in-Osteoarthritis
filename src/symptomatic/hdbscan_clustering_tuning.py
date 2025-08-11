@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 #import hdbscan
 from umap import UMAP
 from sklearn.cluster import HDBSCAN
-from sklearn.metrics import normalized_mutual_info_score
+from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.utils import shuffle
 from scipy.stats import entropy
@@ -162,6 +162,12 @@ if __name__ == "__main__":
         print("\n--- No cross-validation, training on full dataset ---")
         clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
 
+        ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
+
+        wandb.log(
+            {'calinski_harabasz_score': ch_score}
+        )
+
         base_name, results_df = save_results(df=df2_scaled, clusterer=clusterer, params={
             'umap': umap_params,
             'hdbscan': hdbscan_params
@@ -186,9 +192,10 @@ if __name__ == "__main__":
         l_auc_mid2 = []
         l_auc_sev = []
         l_nmi = []
+        l_chscore = []
         for fold, (train_idx, test_idx) in enumerate(kf.split(X_umap, y)):
             print(f"\n--- Fold {fold+1} ---")
-            base_name, results_df, clusterer, X_train, df_train, _, _ = train_fold(fold=fold, 
+            base_name, results_df, clusterer, X_train, df_train, _, _, ch_score = train_fold(fold=fold, 
                                                                            train_idx=train_idx, 
                                                                            test_idx=test_idx, 
                                                                            X=X_umap, y=y, 
@@ -210,6 +217,7 @@ if __name__ == "__main__":
             l_auc_mid2.append(auc_mid2)
             l_auc_sev.append(auc_sev)
             l_nmi.append(nmi)
+            l_chscore.append(ch_score)
 
             plot_hdbscan(X_train, clusterer.labels_,
                     probabilities=clusterer.probabilities_,
@@ -235,7 +243,8 @@ if __name__ == "__main__":
             "std_auc_mid": np.std(l_auc_mid),
             "std_auc_mid2": np.std(l_auc_mid2),
             "std_auc_sev": np.std(l_auc_sev),
-            "std_nmi": np.std(l_nmi)
+            "std_nmi": np.std(l_nmi),
+            "calinski_harabasz_score": ch_score
         })
 
     #     'umap': umap_params,

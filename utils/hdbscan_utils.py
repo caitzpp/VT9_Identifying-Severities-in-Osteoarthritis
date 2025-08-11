@@ -6,7 +6,7 @@ import numpy as np
 import wandb
 from umap import UMAP
 from sklearn.cluster import HDBSCAN
-from sklearn.metrics import normalized_mutual_info_score
+from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score
 from scipy.stats import entropy
 
 from utils.evaluation_utils import normalized_entropy, get_metrics
@@ -155,12 +155,20 @@ def train_fold(fold, train_idx, test_idx, X, y, df, hdbscan_params, umap_params,
 
     clusterer = HDBSCAN(**hdbscan_params).fit(X_train)
 
+    ch_score = calinski_harabasz_score(X_train, clusterer.labels_)
+
+    # wandb.log({
+    #     'calinski_harabasz_score': ch_score
+    #         }
+    #     )
+
+
     base_name, results_df = save_results(df = df_train, clusterer=clusterer, params={
         'umap': umap_params,
         'hdbscan': hdbscan_params
     }, scaler=scaler, save_dir=save_dir_temp, filename=filename, id = 'name', use_wandb=True, fold=fold)
 
-    return base_name, results_df, clusterer, X_train, df_train, X_test, df_test
+    return base_name, results_df, clusterer, X_train, df_train, X_test, df_test, ch_score
 
 def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True, fold = None):
     if fold is not None:
@@ -210,7 +218,7 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='clus
 
         noise_count = (results_df[score]==-1).sum()
 
-        df_filtered = results_df[results_df[score] != -1]
+        df_filtered = results_df[results_df[score] != -1].copy()
         avg_probs = df_filtered.groupby(score)['probability'].mean().sort_values(ascending=False)
         avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
                 
