@@ -60,7 +60,7 @@ def load_features(model_name, on_test_set: bool, average=False):
         raise ValueError(f"Expected 1 folder for {model_name}, got {dirs}")
 
     feat_dir = os.path.join(base_dir, dirs[0], 'test' if on_test_set else 'train')
-    X, y = load_npy_folder_as_array(feat_dir)
+    X, y, _ = load_npy_folder_as_array(feat_dir)
     return X, y
 
 # -------------------------------------------------------------------

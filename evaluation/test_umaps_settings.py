@@ -61,7 +61,7 @@ def load_features(model_name, on_test_set: bool, average = False):
     if len(folder) != 1:
         raise ValueError(f"Found {folder} for {model_name}")
     feat_dir = os.path.join(base_dir, folder[0], 'test' if on_test_set else 'train')
-    X, y = load_npy_folder_as_array(feat_dir)
+    X, y, _ = load_npy_folder_as_array(feat_dir)
     return X, y
 
 if __name__ == "__main__":

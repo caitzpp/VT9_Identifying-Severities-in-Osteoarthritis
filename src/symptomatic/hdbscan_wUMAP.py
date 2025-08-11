@@ -85,7 +85,7 @@ if __name__=="__main__":
 
     #TODO: get correct y values, so get labels such as KL for later
 
-    X, y = load_npy_folder_as_array(feature_dir)
+    X, y, _ = load_npy_folder_as_array(feature_dir)
     X_umap = UMAP(**UMAP_PARAMS).fit_transform(X)
     labels = hdbscan.HDBSCAN(**HDBSCAN_PARAMS).fit_predict(X_umap)
 

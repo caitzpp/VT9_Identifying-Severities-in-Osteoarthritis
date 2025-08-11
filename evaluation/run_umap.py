@@ -44,7 +44,7 @@ if __name__=="__main__":
         print("more than one folder found: ", file)
         raise
 
-    X, y = load_npy_folder_as_array(feature_dir)
+    X, y,_ = load_npy_folder_as_array(feature_dir)
     X_umap = UMAP(**UMAP_PARAMS).fit_transform(X)
     labels = hdbscan.HDBSCAN().fit_predict(X_umap)
 
