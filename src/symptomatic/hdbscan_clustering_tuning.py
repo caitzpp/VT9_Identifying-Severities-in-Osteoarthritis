@@ -151,7 +151,8 @@ if __name__ == "__main__":
         ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
 
         wandb.log(
-            {'calinski_harabasz_score': ch_score}
+            {'calinski_harabasz_score': ch_score,
+             'calinski_harabasz_scorev2': int(ch_score)}
         )
 
         base_name, results_df = save_results(df=df2_scaled, clusterer=clusterer, params={

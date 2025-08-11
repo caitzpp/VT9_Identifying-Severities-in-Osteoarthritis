@@ -329,3 +329,43 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='clus
                 "auc_sev": auc_sev,
                 "nmi": nmi
             })
+
+def get_metrics_hdbscan_radiographic(results_df, save_dir_temp, base_name, score='cluster_label', label='label', use_wandb=True, fold = None):
+    if fold is None:
+        results_df['id'] = results_df['id'].apply(fix_id)
+
+        noise_count = (results_df[score]==-1).sum()
+
+        df_filtered = results_df[results_df[score] != -1].copy()
+        avg_probs = df_filtered.groupby(score)['probability'].mean().sort_values(ascending=False)
+        avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
+                
+        p_dist = df_filtered['probability'] / np.sum(df_filtered['probability'])
+        membership_entropy = entropy(p_dist, base=2)
+        H_max = np.log2(len(p_dist))
+                
+        entropy_per_cluster = df_filtered.groupby(score)['probability'].apply(
+                        normalized_entropy
+                    ).sort_values()
+        entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster.csv"))
+        # df_filtered.to_csv(os.path.join(save_dir_temp, f"{base_name}_wKL.csv"), index=False)
+        df_filtered = df_filtered.dropna(subset=[label])
+        spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_filtered, score = score, label = label)
+        nmi = normalized_mutual_info_score(df_filtered[label], df_filtered[score])
+
+        n_entropy = membership_entropy / H_max
+
+        if use_wandb:
+            wandb.log({
+                "noise_count": noise_count,
+                "avg_probs": avg_probs.mean(),
+                "entropy": membership_entropy,
+                "normalized_entropy": n_entropy,
+                "missing_kl_scores": len(df_filtered[df_filtered[label].isna()]),
+                "spearman_correlation": spr,
+                "auc": auc,
+                "auc_mid": auc_mid,
+                "auc_mid2": auc_mid2,
+                "auc_sev": auc_sev,
+                "nmi": nmi
+            })
