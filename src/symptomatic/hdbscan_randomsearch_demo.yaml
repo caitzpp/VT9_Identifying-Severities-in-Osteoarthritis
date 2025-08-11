@@ -1,4 +1,4 @@
-program: src/hdbscan_clustering_tuning.py
+program: src/symptomatic/hdbscan_clustering_tuning.py
 name: sweepdemo
 method: random
 metric:

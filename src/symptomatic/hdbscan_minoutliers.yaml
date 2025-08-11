@@ -1,12 +1,18 @@
-program: src/hdbscan_clustering_tuning.py
-name: max_spearman_woUMAP
+program: src/symptomatic/hdbscan_clustering_tuning.py
+name: min_noisecount
 method: random
 metric:
-  goal: maximize
-  name: spearman_correlation
+  goal: minimize
+  name: noise_count
 parameters:
   wUMAP:
-    values: [False]
+    values: [True]
+  umap.n_neighbors:
+    values: [5, 10, 15, 30]
+  umap.min_dist:
+    values: [0.01, 0.1, 0.3]
+  umap.metric:
+    values: ['euclidean', 'cosine']
   hdbscan.min_cluster_size:
     values: [5, 10, 20]
   hdbscan.min_samples:

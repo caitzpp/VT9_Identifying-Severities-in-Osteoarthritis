@@ -1,4 +1,4 @@
-program: src/hdbscan_clustering_tuning.py
+program: src/symptomatic/hdbscan_clustering_tuning.py
 project: StructuredData_HDBSCAN_Clustering_Filtered
 description: Using filtered data, taking into account that questionnaires were filled out on a patient/visit basis and not per knee. Values were simply filtered out.
 name: max_avgprobs_woCV
@@ -12,20 +12,20 @@ parameters:
   replace_NanValues:
     values: [False]
   umap.n_neighbors:
-    values: [5, 10, 15, 30]
+    values: [10,20,30]
   umap.min_dist:
     values: [0.01, 0.1, 0.3]
   umap.metric:
     values: ['euclidean']
   hdbscan.min_cluster_size:
-    values: [3, 5, 7]
+    values: [5, 7]
   hdbscan.min_samples:
     values: [-1, 5, 10]
   hdbscan.cluster_selection_method:
-    values: ['eom', 'leaf']
+    values: ['eom']
   hdbscan.alpha:
     values: [1.0, 1.5, 2.0]
   hdbscan.metric:
     values: ['euclidean']
-  # k-cv:
-  #   values: [5]
+  k-cv:
+    values: [5]
