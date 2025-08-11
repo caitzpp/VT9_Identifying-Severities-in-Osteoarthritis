@@ -90,7 +90,8 @@ if __name__ == "__main__":
         'n_neighbors': 15,
         'min_dist': 0.1,
         'n_components': 2,
-        'metric': 'euclidean'
+        'metric': 'euclidean',
+        'random_state': 42
     }
 
     hdbscan_defaults = {
@@ -142,21 +143,6 @@ if __name__ == "__main__":
 
     save_dir_temp = os.path.join(save_dir, save_folder)
     os.makedirs(save_dir_temp, exist_ok=True)
-
-    # if kf is not None:
-    #     for fold, (train_idx, test_idx) in enumerate(kf.split(X_umap, y)):
-    #         print(f"\n--- Fold {fold+1} ---")
-       
-    #         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    #         df_train, df_test = df.iloc[train_idx], df.iloc[test_idx]
-
-
-    #need to get a better name here
-    # save_folder = run_folder_name
-    # filename = f"{run.name}_umap_hdbscan_scaled"
-
-    # save_dir_temp = os.path.join(save_dir, save_folder)
-    # os.makedirs(save_dir_temp, exist_ok=True)
 
     if kf is None:
         print("\n--- No cross-validation, training on full dataset ---")
@@ -246,54 +232,5 @@ if __name__ == "__main__":
             "std_nmi": np.std(l_nmi),
             "calinski_harabasz_score": ch_score
         })
-
-    #     'umap': umap_params,
-    #     'hdbscan': hdbscan_params
-    # }, scaler=scaler, save_dir=save_dir_temp, filename=filename, id = 'name', use_wandb=True)
-
-    # results_df['id'] = results_df['id'].apply(fix_id)
-
-    # noise_count = (results_df['cluster_label']==-1).sum()
-    # wandb.log({"noise_count": noise_count})
-
-    # df_filtered = results_df[results_df['cluster_label'] != -1]
-    # avg_probs = df_filtered.groupby('cluster_label')['probability'].mean().sort_values(ascending=False)
-    # wandb.log({"avg_probs": avg_probs.mean()})
-    # avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
-            
-    # p_dist = df_filtered['probability'] / np.sum(df_filtered['probability'])
-    # membership_entropy = entropy(p_dist, base=2)
-    # H_max = np.log2(len(p_dist))
-
-    # wandb.log({"entropy": membership_entropy,
-    #             "normalized_entropy": membership_entropy / H_max})
-            
-    # entropy_per_cluster = df_filtered.groupby('cluster_label')['probability'].apply(
-    #                 normalized_entropy
-    #             ).sort_values()
-    # entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster.csv"))
-
-    # # kl_df = pd.read_csv(kl_filepath)
-
-    # df_merged = df_filtered.merge(df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
-    # wandb.log({"missing_kl_scores": len(df_merged[df_merged['KL-Score'].isna()])})
-
-    # df_merged.to_csv(os.path.join(save_dir_temp, f"{base_name}_wKL.csv"), index=False)
-    # df_merged = df_merged.dropna(subset=['KL-Score'])
-    # spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_merged, score = 'cluster_label', label = 'KL-Score')
-    # nmi = normalized_mutual_info_score(df_merged['KL-Score'], df_merged['cluster_label'])
-
-    # wandb.log({
-    #     "spearman_correlation": spr,
-    #     "auc": auc,
-    #     "auc_mid": auc_mid,
-    #     "auc_mid2": auc_mid2,
-    #     "auc_sev": auc_sev,
-    #     "nmi": nmi
-    # })
-
-    # plot_hdbscan(X_umap, clusterer.labels_, 
-    #             probabilities=clusterer.probabilities_, 
-    #             save_path=os.path.join(save_dir, f"{base_name}_plot.png"))
     
     wandb.finish()
