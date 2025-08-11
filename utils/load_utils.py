@@ -24,7 +24,9 @@ def load_npy_folder_as_array(folder, flatten=True):
     for label_folder in sorted(Path(folder).iterdir()):
         if label_folder.is_dir():
             label = label_folder.name
+            #print(label)
             for npy_path in label_folder.glob("*.npy"):
+                #print(npy_path)
                 arr = np.load(npy_path)
 
                 if flatten:
