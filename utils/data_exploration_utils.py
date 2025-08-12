@@ -49,11 +49,18 @@ def investigate_data(df, id_col = 'record_id', save_path = None, save_name = Non
         print(f"Data description saved to {save_path}")
         print()
     
-    max_count = df_descr.loc['count'].max()
+    # max_count = df_descr.loc['count'].max()
 
-    for col in df_descr.columns:
-        if df_descr[col]['count'] < max_count:
-            print(f"Column '{col}' has missing values: {df_descr[col]['count']} out of {max_count}")
+    # for col in df_descr.columns:
+    #     if df_descr[col]['count'] < max_count:
+    #         print(f"Column '{col}' has missing values: {df_descr[col]['count']} out of {max_count}")
+    
+    total_rows = len(df)
+    missing_counts = df.isna().sum()
+
+    for col, missing in missing_counts.items():
+        if missing > 0:
+            print(f"Column '{col}' has {missing} missing values ({total_rows - missing} out of {total_rows} non-null).")
     print()
     nan_columns = get_nan_values(df)
 
