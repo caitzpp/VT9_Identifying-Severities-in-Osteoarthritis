@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from IPython.display import display
 import math
+from utils.load_utils import load_image
 
 def drop_unnamedcolumn(df):
     df = df.loc[:, ~df.columns.str.contains('Unnamed')]
@@ -198,3 +199,46 @@ def missing_from_df(df1, df2, df1_id, df2_id):
     missing_from_df2 = df1_clean[~df1_clean[df1_id].isin(df2_clean[df2_id])]
     
     return missing_from_df1, missing_from_df2
+
+
+def check_img_resp_cluster_klscore(df, cluster_label, klscore, img_path,cluster_label_col = 'cluster_label', klscore_col = 'KL-Score', k = None):
+    tocheck = df[(df[cluster_label_col]==cluster_label) & (df[klscore_col]==klscore)]
+    idtocheck = list(tocheck['id'])
+    l = []
+    for dirp, dirn, _ in os.walk(img_path):
+        for folder in dirn:
+            basedir = os.path.join(dirp, folder, str(klscore))
+            possible_paths=[]
+            for id in idtocheck:
+                possible_path = id + '.png'
+                possible_paths.append(possible_path)
+            l_dir = os.listdir(basedir)
+            for path in possible_paths:
+                if path in l_dir:
+                    l.append(os.path.join(basedir, path))
+            break
+        break
+    if k is not None:
+        l = l[:k]
+
+    cols = 2
+    rows = math.ceil(len(l) / cols)
+
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 4, rows * 4))
+    axes = np.atleast_1d(axes).reshape(rows, cols)
+
+    for i, p in enumerate(l):
+        r, c = divmod(i, cols)
+        img = load_image(p)  # assumes your existing helper
+        axes[r, c].imshow(img, cmap='gray')
+        axes[r, c].set_title(os.path.basename(p), fontsize=9)
+        axes[r, c].axis('off')
+
+    # Hide any unused axes (e.g., when len(paths) is odd)
+    for j in range(len(l), rows * cols):
+        r, c = divmod(j, cols)
+        axes[r, c].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+    return idtocheck
