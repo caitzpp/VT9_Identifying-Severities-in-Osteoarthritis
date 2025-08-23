@@ -369,3 +369,36 @@ def get_metrics_hdbscan_radiographic(results_df, save_dir_temp, base_name, score
                 "auc_sev": auc_sev,
                 "nmi": nmi
             })
+
+def save_umap_true_plot(X_umap, y, out_path, umap_params, title_suffix=""):
+    """Save UMAP plot colored by true labels."""
+    cmap5 = plt.cm.get_cmap('tab10', 5)
+    if umap_params['n_components'] == 2:
+        fig, ax = plt.subplots(figsize=(12, 10))
+        sc = ax.scatter(
+            X_umap[:, 0], X_umap[:, 1],
+            c=y, cmap=cmap5, s=30, alpha=0.7, edgecolor='k', linewidth=0.5
+        )
+        ax.set_xlabel("UMAP 1")
+        ax.set_ylabel("UMAP 2")
+    else:
+        fig = plt.figure(figsize=(12, 10))
+        ax = fig.add_subplot(111, projection='3d')
+        sc = ax.scatter(
+            X_umap[:, 0], X_umap[:, 1], X_umap[:, 2],
+            c=y, cmap=cmap5, s=30, alpha=0.7, edgecolor='k', linewidth=0.5
+        )
+        ax.set_xlabel("UMAP 1")
+        ax.set_ylabel("UMAP 2")
+        ax.set_zlabel("UMAP 3")
+
+    handles, labels = sc.legend_elements(prop="colors", num=4)
+    ax.legend(
+        handles, labels, title="Label",
+        loc="upper left", bbox_to_anchor=(1.02, 1),
+        borderaxespad=0., frameon=False
+    )
+    ax.set_title(f"True Labels{title_suffix}")
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=200)
+    plt.close()
