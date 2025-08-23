@@ -24,7 +24,7 @@ today = datetime.date.today()
 
 proc_dir = config.PROC_DATA_PATH
 
-STAGE = 'ss2' #had to redownload it, this should be the correct one
+STAGE = "average_mod_smallimg2" #'ss2' #had to redownload it, this should be the correct one
 NEPOCH = '400'
 MODEL_NAME = 'mod_st'
 seed = '34'
