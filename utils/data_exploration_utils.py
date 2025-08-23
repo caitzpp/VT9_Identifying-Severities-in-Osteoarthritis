@@ -204,6 +204,10 @@ def missing_from_df(df1, df2, df1_id, df2_id):
 def check_img_resp_cluster_klscore(df, cluster_label, klscore, img_path,cluster_label_col = 'cluster_label', klscore_col = 'KL-Score', k = None):
     tocheck = df[(df[cluster_label_col]==cluster_label) & (df[klscore_col]==klscore)]
     idtocheck = list(tocheck['id'])
+    to_remove = ["IM3003_1_left", "IM3012_2_right"]
+    for i in to_remove:
+        if i in idtocheck:
+            idtocheck.remove(i)
     l = []
     for dirp, dirn, _ in os.walk(img_path):
         for folder in dirn:
@@ -216,6 +220,9 @@ def check_img_resp_cluster_klscore(df, cluster_label, klscore, img_path,cluster_
             for path in possible_paths:
                 if path in l_dir:
                     l.append(os.path.join(basedir, path))
+                else:
+                    parent_path = os.path.join(img_path, os.path.basename(path))
+                    l.append(parent_path)
             break
         break
     if k is not None:
