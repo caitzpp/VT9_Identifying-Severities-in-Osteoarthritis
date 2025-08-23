@@ -2,6 +2,7 @@ import os
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
+import joblib
 import numpy as np
 import wandb
 from umap import UMAP
@@ -25,7 +26,7 @@ def get_unique_filepath(base_path):
         new_path = f"{base}_{counter}{ext}"
     return new_path
 
-def save_results(df, clusterer, params, scaler, save_dir, filename, id = 'id', comment = None, use_wandb= False, fold = None):
+def save_results(df, clusterer, params, scaler, save_dir, filename, id = 'id',artifacts = None, comment = None, use_wandb= False, fold = None):
     if fold is not None:
         df_filename = f"{filename}_fold{fold}.csv"
         results_df = pd.DataFrame({
@@ -42,6 +43,7 @@ def save_results(df, clusterer, params, scaler, save_dir, filename, id = 'id', c
                 'scaler': scaler.__class__.__name__,
                 'n_clusters': len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0),
                 'centroids': clusterer.centroids_.tolist(),
+                'files': artifacts,
                 'comment': comment,
             }
         
@@ -212,18 +214,39 @@ def plot_hdbscan(
     #return ax
 
 
-def prep_data(df, scaler, umap_params = None, wUMAP = True, id_col='name', y_value = 'KL-Score'):
+def prep_data(df, scaler, umap_params = None, wUMAP = True, id_col='name', y_value = 'KL-Score', save_path = None):
         df_scaled = df.copy()
         y = df_scaled[y_value]
         X = df_scaled.drop(columns=[id_col, y_value])
         X_scaled = scaler.fit_transform(X)
 
         if wUMAP:
-            X_umap = UMAP(**umap_params).fit_transform(X_scaled)
+            reducer = UMAP(**umap_params)
+            X_umap = reducer.fit_transform(X_scaled)
+            emb_name = "X_umap"
+            if save_path is not None:
+                artifacts = {}
+                umap_path = os.path.join(save_path, "umap_model.pkl")
+                joblib.dump(reducer, umap_path)
+                artifacts["umap_model"] = umap_path
+
         else:
             X_umap = X_scaled
+            emb_name = "X_scaled"
         
-        return X_umap, y, df_scaled
+        if save_path is not None:
+            #emb_cols = [f"umap{i+1}" for i in range(X_umap.shape[1])]
+
+            #save scaler
+            scaler_path = os.path.join(save_path, "scaler.pkl")
+            joblib.dump(scaler, scaler_path)
+            artifacts['scaler'] = scaler_path
+
+            #save embeddings
+            embeddings_path = os.path.join(save_path, f"{emb_name}_embeddings.npy")
+            np.save(embeddings_path, X_umap)
+            artifacts['embeddings'] = embeddings_path
+        return X_umap, y, df_scaled, artifacts
 
 def train_fold(fold, train_idx, test_idx, X, y, df, hdbscan_params, umap_params, scaler,filename, save_dir_temp):
     X_train, X_test = X[train_idx], X[test_idx]

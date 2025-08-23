@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 from IPython.display import display
 from itertools import product
+import joblib
 import datetime
 from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold
 
@@ -155,22 +156,24 @@ if __name__ == "__main__":
     # 'gender' convert to int
     df2['is_male'] = df['gender'].apply(lambda x: 1 if x=='male' else 0)
     df2 = df2.drop(columns= 'gender')
-
-    scaler = StandardScaler()
-    
-    X_umap, y, df2_scaled = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score')
-
-    kf = StratifiedKFold(n_splits=k, shuffle=True, random_state=random_state) if k is not None else None
-
     save_folder = run_folder_name
     filename = f"{run.name}_umap_hdbscan_scaled"
 
     save_dir_temp = os.path.join(save_dir, save_folder)
     os.makedirs(save_dir_temp, exist_ok=True)
 
+    scaler = StandardScaler()
+    
+    X_umap, y, df2_scaled, artifacts = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', save_path=save_dir_temp)
+
+    kf = StratifiedKFold(n_splits=k, shuffle=True, random_state=random_state) if k is not None else None
+
     if kf is None:
         print("\n--- No cross-validation, training on full dataset ---")
         clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
+        clusterer_path = os.path.join(save_dir_temp, f"{filename}_clusterer.pkl")
+        joblib.dump(clusterer, clusterer_path)
+        artifacts['clusterer'] = clusterer_path
 
         ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
 
@@ -182,7 +185,7 @@ if __name__ == "__main__":
         base_name, results_df = save_results(df=df2_scaled, clusterer=clusterer, params={
             'umap': umap_params,
             'hdbscan': hdbscan_params
-        }, scaler=scaler, save_dir=save_dir_temp, filename=filename, id='name', use_wandb=True)
+        }, scaler=scaler, save_dir=save_dir_temp, artifacts = artifacts, filename=filename, id='name', use_wandb=True)
     
         get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True)
 
