@@ -517,7 +517,9 @@ def plotly_hdbscan_highlight(
     else:
         base = go.Scatter3d(
             x=x, y=y, z=X[:, 2], mode="markers",
-            marker=dict(color="lightgray", size=max(2, int(base_gray_size/2))),
+            marker=dict(color="lightgray", 
+                        #size=max(2, int(base_gray_size/2))
+                        ),
             opacity=base_gray_opacity, name="All (gray)", showlegend=False
         )
     traces.append(base)
@@ -557,7 +559,7 @@ def plotly_hdbscan_highlight(
                     x=x[mask], y=y[mask], mode="markers",
                     marker=dict(
                         color=col,
-                        size=(sizes[mask] if c != -1 else size_min),
+                       # size=(sizes[mask] if c != -1 else size_min),
                         line=dict(width=0.5, color="black") if c != -1 else None
                     ),
                     name=legend_name,
@@ -569,7 +571,7 @@ def plotly_hdbscan_highlight(
                     x=x[mask], y=y[mask], z=X[mask, 2], mode="markers",
                     marker=dict(
                         color=col,
-                        size=(np.clip(sizes[mask]/3.0, 2, 8) if c != -1 else max(2, int(size_min/2)))
+                       # size=(np.clip(sizes[mask]/3.0, 2, 8) if c != -1 else max(2, int(size_min/2)))
                     ),
                     name=legend_name,
                     legendgroup=legend_group,
