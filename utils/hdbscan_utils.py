@@ -76,6 +76,7 @@ def save_results(df, clusterer, params, scaler, save_dir, filename, id = 'id',ar
                 'scaler': scaler.__class__.__name__,
                 'n_clusters': len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0),
                 'centroids': clusterer.centroids_.tolist(),
+                'files': artifacts,
                 'comment': comment,
             }
         
@@ -217,6 +218,7 @@ def plot_hdbscan(
 def prep_data(df, scaler, umap_params = None, wUMAP = True, id_col='name', y_value = 'KL-Score', save_path = None):
         df_scaled = df.copy()
         y = df_scaled[y_value]
+        ids = df_scaled[id_col]
         X = df_scaled.drop(columns=[id_col, y_value])
         X_scaled = scaler.fit_transform(X)
 
@@ -229,6 +231,7 @@ def prep_data(df, scaler, umap_params = None, wUMAP = True, id_col='name', y_val
                 umap_path = os.path.join(save_path, "umap_model.pkl")
                 joblib.dump(reducer, umap_path)
                 artifacts["umap_model"] = umap_path
+                artifacts["ids"] = list(ids)
 
         else:
             X_umap = X_scaled

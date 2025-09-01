@@ -94,6 +94,7 @@ cols = [
 wandb.login(key=config.HDBSCAN_SYMP_WANDBAPI_KEY)
 
 if __name__ == "__main__":
+    np.random.seed(random_state)
     run_folder_name, run_path = get_next_run_folder(save_dir)
 
     run = wandb.init(
@@ -130,7 +131,8 @@ if __name__ == "__main__":
         'algorithm': 'auto',
         'leaf_size': 40,
         'store_centers': 'centroid',
-        'alpha': 1.0
+        'alpha': 1.0,
+        'approx_min_span_tree': False,
     }
 
     if wUMAP:
