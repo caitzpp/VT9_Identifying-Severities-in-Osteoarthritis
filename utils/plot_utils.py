@@ -415,6 +415,7 @@ def plotly_hdbscan_highlight(
     X,
     labels,
     y_kl,
+    id_names, 
     probabilities=None,
     dim=2,
     title="UMAP + HDBSCAN (highlight)",
@@ -450,11 +451,12 @@ def plotly_hdbscan_highlight(
     X = np.asarray(X)
     labels = np.asarray(labels)
     y_kl = np.asarray(y_kl)
+    id_names = np.asarray(id_names)
     n = X.shape[0]
     assert dim in (2, 3), "dim must be 2 or 3"
     assert X.shape[1] >= dim, "X must have at least `dim` columns"
-    if labels.shape[0] != n or y_kl.shape[0] != n:
-        raise ValueError("X, labels, and y_kl must have same length")
+    if labels.shape[0] != n or y_kl.shape[0] != n or id_names.shape[0] != n:
+        raise ValueError("X, labels, y_kl, and idx must have same length")
 
     # ---------- sizes from probabilities (robust) ----------
     if probabilities is None:
@@ -567,6 +569,7 @@ def plotly_hdbscan_highlight(
                     showlegend=bool(showlegend),
                 )
             else:
+                cd = np.column_stack([y_kl[mask], labels[mask], id_names[mask]])
                 tr = go.Scatter3d(
                     x=x[mask], y=y[mask], z=X[mask, 2], mode="markers",
                     marker=dict(
@@ -576,6 +579,10 @@ def plotly_hdbscan_highlight(
                     name=legend_name,
                     legendgroup=legend_group,
                     showlegend=bool(showlegend),
+                    customdata=cd,
+                    hovertemplate = '<b>KL=</b>: %{customdata[0]}<br>'+
+                                    '<b>Cluster=</b>: %{customdata[1]}<br>'+
+                                    '<b>Index=</b>: %{customdata[2]}<extra></extra>'
                 )
 
             traces.append(tr)

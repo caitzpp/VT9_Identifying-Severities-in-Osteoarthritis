@@ -22,34 +22,68 @@ if __name__=="__main__":
     X_umap = np.load(embeddings_path)
 
     if reversed==True:
-        label = 'KL-Score'
-        score = 'cluster_label'
+        label = 'cluster_label'
+        score = 'KL-Score'
+        legendby = 'kl'
+        buttonby = 'cluster'
     else:
         label = 'cluster_label'
         score = 'KL-Score'
+        legendby = 'cluster'
+        buttonby = 'kl'
 
     if cluster_num is not None:
         index_ids = df[df[label]==cluster_num].index
         x_umap = X_umap[index_ids, :]
         df_temp = df.iloc[index_ids]
-        fig = plotly_hdbscan_highlight_kl2(
-            X= x_umap,
-            labels = df_temp[label],
-            y_kl=df_temp[score],
-            dim = 3,
-            title = " ",
-            compact=False, q_clip=0.01, pad_frac=0.03,
-            zoom_by_kl=False
-        )
+        fig = plotly_hdbscan_highlight(
+                    X=x_umap,
+                    labels=df_temp[label],
+                    y_kl = df_temp[score],
+                    id_names= df_temp['id'],
+                    probabilities=None,
+                    dim=3,
+                    title="UMAP + HDBSCAN (highlight)",
+                    # legend / buttons / colors
+                    legend_by=legendby,     # "cluster" or "kl"
+                    buttons_by=buttonby,         # "cluster" or "kl"
+                    color_by="legend",       # "legend" or explicitly "cluster"/"kl"
+                    # gray base & sizes
+                    base_gray_opacity=0.2,
+                    base_gray_size=6,
+                    size_min=8,
+                    size_max=20,
+                    # compact controls
+                    compact=False,
+                    q_clip=0.01,
+                    pad_frac=0.03,
+                    equal_aspect=True,
+                    zoom_by=None,            # None, "kl", or "cluster"
+                )
     else:
-        fig = plotly_hdbscan_highlight_kl2(
-            X= X_umap,
-            labels = df[label],
-            y_kl=df[score],
-            dim = 3,
-            title = " ",
-            compact=False, q_clip=0.01, pad_frac=0.03,
-        zoom_by_kl=False
-        )
+        fig = plotly_hdbscan_highlight(
+                    X=X_umap,
+                    labels=df[label],
+                    y_kl = df[score],
+                    id_names= df['id'],
+                    probabilities=None,
+                    dim=3,
+                    title="UMAP + HDBSCAN (highlight)",
+                    # legend / buttons / colors
+                    legend_by=legendby,     # "cluster" or "kl"
+                    buttons_by=buttonby,         # "cluster" or "kl"
+                    color_by="legend",       # "legend" or explicitly "cluster"/"kl"
+                    # gray base & sizes
+                    base_gray_opacity=0.2,
+                    base_gray_size=6,
+                    size_min=8,
+                    size_max=20,
+                    # compact controls
+                    compact=False,
+                    q_clip=0.01,
+                    pad_frac=0.03,
+                    equal_aspect=True,
+                    zoom_by=None,            # None, "kl", or "cluster"
+                )
         
     fig.show(renderer = "browser")
