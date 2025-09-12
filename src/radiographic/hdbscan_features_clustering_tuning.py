@@ -2,6 +2,7 @@ import wandb
 
 import config
 import os
+import joblib
 import pandas as pd
 import json
 import numpy as np
@@ -30,7 +31,7 @@ MODEL_NAME = 'mod_st'
 seed = '34'
 on_test_set = False
 DATA_PATH = config.FEATURE_PATH
-# DATA_TYPE = "features" #"chenetal_train"
+# DATA_TYPE = "images" #"features" #"chenetal_train"
 
 folder = None
 
@@ -56,6 +57,8 @@ if __name__=="__main__":
 
     save_dir_temp = os.path.join(save_dir, save_folder)
     os.makedirs(save_dir_temp, exist_ok=True)
+    filename = f"{run.name}_umap_hdbscan_scaled"
+    df_savepath = get_unique_filepath(os.path.join(save_dir_temp, filename + '.csv'))
 
     img_savepath = os.path.join(save_dir_temp, 'img')
     os.makedirs(img_savepath, exist_ok=True)
@@ -127,8 +130,19 @@ if __name__=="__main__":
 
     X, y, names = load_npy_folder_as_array(feature_dir)
     X = scaler.fit_transform(X)
-    X_umap = UMAP(**umap_params).fit_transform(X)
+    reducer = UMAP(**umap_params)
+    X_umap = reducer.fit_transform(X)
+    
+    umap_path = os.path.join(save_dir_temp, "umap_model.pkl")
+    joblib.dump(reducer, umap_path)
+    scaler_path = os.path.join(save_dir_temp, "scaler.pkl")
+    joblib.dump(scaler, scaler_path)
+    embeddings_path = os.path.join(save_dir_temp, "embeddings.npz")
+    np.savez(embeddings_path, X_umap=X_umap, names=np.array(names))
+
     clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
+    clusterer_path = os.path.join(save_dir_temp, f"{filename}_clusterer.pkl")
+    joblib.dump(clusterer, clusterer_path)
 
     ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
     
@@ -142,8 +156,7 @@ if __name__=="__main__":
         'probability': clusterer.probabilities_,
     })
 
-    filename = f"{run.name}_umap_hdbscan_scaled"
-    df_savepath = get_unique_filepath(os.path.join(save_dir_temp, filename + '.csv'))
+   
     results_df.to_csv(df_savepath, index=False)
 
     model_info = {
@@ -171,3 +184,4 @@ if __name__=="__main__":
     plot_hdbscan(X_umap, clusterer.labels_,
                     probabilities=clusterer.probabilities_,
                     save_path=os.path.join(save_dir_temp, f"{b_name}_plot.png"))
+    wandb.finish()
