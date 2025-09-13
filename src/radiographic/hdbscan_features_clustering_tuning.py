@@ -18,7 +18,7 @@ from sklearn.cluster import HDBSCAN
 from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score
 from sklearn.model_selection import StratifiedKFold
 from utils.load_utils import fix_id, get_next_run_folder
-from utils.load_utils import load_npy_folder_as_array
+from utils.load_utils import load_npy_folder_as_array, load_image_folder_as_array
 
 
 today = datetime.date.today()
@@ -30,8 +30,14 @@ NEPOCH = '400'
 MODEL_NAME = 'mod_st'
 seed = '34'
 on_test_set = False
-DATA_PATH = config.FEATURE_PATH
-# DATA_TYPE = "images" #"features" #"chenetal_train"
+DATA_TYPE = "features" #"images" #"features" #"chenetal_train"
+
+if DATA_TYPE=="features":
+    DATA_PATH = config.FEATURE_PATH
+    DATA_PATH = os.path.join(DATA_PATH, STAGE)
+elif DATA_TYPE=="images":
+    DATA_PATH = config.RAW_DATA_PATH
+    DATA_PATH = os.path.join(DATA_PATH, 'images_knee', '600x600_imgs')
 
 folder = None
 
@@ -40,6 +46,8 @@ random_state=42
 
 if folder is not None:
     save_dir = os.path.join(proc_dir, 'radiographic_features', folder)
+elif DATA_TYPE=="images":
+    save_dir = os.path.join(proc_dir,'radiographic_features', f"{today}_hdbscan_img")
 else:
     save_dir = os.path.join(proc_dir,'radiographic_features', f"{today}_hdbscan")
 # img_savepath = os.path.join(save_dir, 'img')
@@ -104,13 +112,13 @@ if __name__=="__main__":
     if hdbscan_params['min_samples'] == -1:
         hdbscan_params['min_samples'] = None
 
-    files = os.listdir(os.path.join(DATA_PATH, STAGE))
+    # files = os.listdir(os.path.join(DATA_PATH, STAGE))
 
-    DATA_PATH = os.path.join(DATA_PATH, STAGE)
-    if on_test_set:
-        feature_dir = os.path.join(DATA_PATH, 'test')
-    else:
-        feature_dir = os.path.join(DATA_PATH, 'train')
+    
+    # if on_test_set:
+    #     feature_dir = os.path.join(DATA_PATH, 'test')
+    # else:
+    #     feature_dir = os.path.join(DATA_PATH, 'train')
 
     # file = [f for f in files if (MODEL_NAME in f) & (NEPOCH in f) & (seed in f) & ('on_test_set' not in f)]
 
@@ -127,8 +135,18 @@ if __name__=="__main__":
     #     raise
     
     scaler = StandardScaler()
-
-    X, y, names = load_npy_folder_as_array(feature_dir)
+    X = []
+    y = []
+    names = []
+    for subdir in ['train', 'test']:
+        feature_dir = os.path.join(DATA_PATH, subdir)
+        if DATA_TYPE=="images":
+            X_sub, y_sub, names_sub = load_image_folder_as_array(feature_dir, image_size=(64, 64))
+        elif DATA_TYPE=="features":
+            X_sub, y_sub, names_sub = load_npy_folder_as_array(feature_dir)
+        X.extend(X_sub)
+        y.extend(y_sub)
+        names.extend(names_sub)
     X = scaler.fit_transform(X)
     reducer = UMAP(**umap_params)
     X_umap = reducer.fit_transform(X)

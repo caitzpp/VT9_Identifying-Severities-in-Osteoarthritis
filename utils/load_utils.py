@@ -7,6 +7,8 @@ import os
 def load_image_folder_as_array(folder, image_size=(64, 64)):
     X = []
     y = []
+    names = []
+
     for label_folder in sorted(Path(folder).iterdir()):
         if label_folder.is_dir():
             label = label_folder.name
@@ -14,7 +16,8 @@ def load_image_folder_as_array(folder, image_size=(64, 64)):
                 img = Image.open(img_path).convert("L").resize(image_size)
                 X.append(np.array(img).flatten())  # Flatten to vector
                 y.append(int(label))
-    return np.array(X), np.array(y)
+                names.append(img_path.stem)
+    return np.array(X), np.array(y), np.array(names)
 
 def load_npy_folder_as_array(folder, flatten=True):
     X = []
