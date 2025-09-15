@@ -30,7 +30,7 @@ NEPOCH = '400'
 MODEL_NAME = 'mod_st'
 seed = '34'
 on_test_set = False
-DATA_TYPE = "features" #"images" #"features" #"chenetal_train"
+DATA_TYPE = "images" #"images" #"features" #"chenetal_train"
 
 if DATA_TYPE=="features":
     DATA_PATH = config.FEATURE_PATH
