@@ -97,6 +97,16 @@ def save_results(df, clusterer, params, scaler, save_dir, filename, id = 'id',ar
 
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (needed for 3D)
 
+def make_cluster_color_map(labels, cmap=plt.cm.tab20):
+    unique_labels = sorted(set(labels) - {-1})   # exclude noise
+    n_colors = len(unique_labels)
+    n_colors = max(n_colors, 1)
+    color_map = {}
+    color_list = [plt.cm.Spectral(t) for t in np.linspace(0, 1, n_colors)]
+    color_map = {lab: color_list[i % len(color_list)] for i, lab in enumerate(sorted(unique_labels))}
+    color_map[-1] = (0, 0, 0, 1)  # black for noise
+    return color_map
+
 def plot_hdbscan(
     X,
     labels,
@@ -213,7 +223,148 @@ def plot_hdbscan(
         plt.savefig(save_path, bbox_inches='tight', dpi=150)
     # return ax so caller can further tweak
     #return ax
+    
+def add_jitter(X, scale=0.02):
+    """Add Gaussian noise to spread out overlapping points."""
+    return X + np.random.normal(0, scale, X.shape)
 
+def plot_hdbscan_highlight_kl(
+    X,
+    labels,
+    y_kl,                 # array-like of KL-scores per point
+    focus_kl,             # the KL value to highlight (e.g., 0,1,2,3,4)
+    probabilities=None,
+    parameters=None,
+    ground_truth=False,
+    ax=None,
+    save_path=None,
+    size_min=8,
+    size_max=80,
+    use_first_three_dims=True,
+    gray_alpha=0.75,      # transparency for non-focused points
+    gray_size_factor=1,  # size multiplier for gray points
+    color_alpha = 0.3,
+    global_color_map=None  # if provided, use this color map for clusters
+):
+    """
+    Plots clusters but highlights only points with y_kl == focus_kl in color.
+    All other points are rendered in light gray. Noise is still 'x' markers.
+
+    - Keeps your 2D/3D auto logic.
+    - Sizes scale with `probabilities` for focused points; gray points use reduced size.
+    """
+    X = np.asarray(X)
+    X = add_jitter(X, scale = 0.05)
+    labels = np.asarray(labels)
+    y_kl = np.asarray(y_kl)
+    n, d = X.shape
+
+    # choose 2D vs 3D
+    is_3d = d >= 3
+    if is_3d and use_first_three_dims:
+        Xp = X[:, :3]
+    else:
+        if d < 2:
+            raise ValueError("X must have at least 2 features to plot.")
+        Xp = X[:, :2]
+
+    # probabilities -> sizes
+    if probabilities is None:
+        probabilities = np.ones(n, dtype=float)
+    else:
+        probabilities = np.asarray(probabilities, dtype=float)
+        pmin, pmax = probabilities.min(), probabilities.max()
+        if pmax > 1.0 or pmin < 0.0:
+            probabilities = (probabilities - pmin) / (pmax - pmin + 1e-12)
+    sizes = size_min + (size_max - size_min) * probabilities
+
+    # figure / axes
+    created_fig = False
+    if ax is None:
+        fig = plt.figure(figsize=(9, 5))
+        created_fig = True
+        if is_3d:
+            ax = fig.add_subplot(111, projection='3d')
+        else:
+            ax = fig.add_subplot(111)
+
+    # masks
+    focus_mask = (y_kl == focus_kl)
+    other_mask = ~focus_mask
+
+    # --- 1) plot NON-focused points in uniform light gray (behind)
+    if np.any(other_mask):
+        gray_sizes = (size_min + (size_max - size_min) * 0.3) * gray_size_factor
+        if is_3d:
+            ax.scatter(Xp[other_mask, 0], Xp[other_mask, 1], Xp[other_mask, 2],
+                       marker='o', c='lightgray', s=gray_sizes, alpha=gray_alpha)
+        else:
+            ax.scatter(Xp[other_mask, 0], Xp[other_mask, 1],
+                       marker='o', c='lightgray', s=gray_sizes, alpha=gray_alpha)
+
+    # --- 2) plot FOCUSED points with the original cluster coloring
+    unique_labels = np.unique(labels[focus_mask]) if np.any(focus_mask) else np.array([])
+    non_noise = [lab for lab in unique_labels if lab != -1]
+
+    # build color map for focused clusters
+    if global_color_map is None:
+        n_colors = len(non_noise)
+        n_colors = max(n_colors, 1)
+        color_list = [plt.cm.Spectral(t) for t in np.linspace(0, 1, n_colors)]
+        color_map = {lab: color_list[i % len(color_list)] for i, lab in enumerate(sorted(non_noise))}
+    else:
+        color_map = global_color_map
+
+    handles, labels_for_legend = [], []
+
+    # plot focused clusters (and noise)
+    for k in sorted(set(unique_labels), key=lambda x: (x == -1, x)):
+        mask = focus_mask & (labels == k)
+        if not np.any(mask):
+            continue
+
+        if k == -1:
+            # noise: black 'x'
+            if is_3d:
+                h = ax.scatter(Xp[mask, 0], Xp[mask, 1], Xp[mask, 2],
+                               marker='x', c='k', s=size_min, linewidths=0.8, alpha=0.9)
+            else:
+                h = ax.scatter(Xp[mask, 0], Xp[mask, 1],
+                               marker='x', c='k', s=size_min, linewidths=0.8, alpha=0.9)
+            handles.append(h); labels_for_legend.append(f"Noise (KL={focus_kl})")
+        else:
+            col = color_map[k]
+            if is_3d:
+                h = ax.scatter(Xp[mask, 0], Xp[mask, 1], Xp[mask, 2],
+                               marker='o', c=[col], s=sizes[mask], edgecolors='k', linewidths=0.2, alpha=color_alpha)
+            else:
+                h = ax.scatter(Xp[mask, 0], Xp[mask, 1],
+                               marker='o', c=[col], s=sizes[mask], edgecolors='k', linewidths=0.2, alpha=color_alpha)
+            handles.append(h); labels_for_legend.append(f"Cluster {k} (KL={focus_kl})")
+
+    # title
+    pre = "True" if ground_truth else "Estimated"
+    n_clusters_ = len(non_noise)
+    title = f"{pre} clusters in KL={focus_kl}: {n_clusters_}"
+    if parameters and isinstance(parameters, dict) and len(parameters):
+        param_str = ", ".join(f"{k}={v}" for k, v in parameters.items())
+        title += f" | {param_str}"
+    ax.set_title(title)
+
+    # axes labels
+    if is_3d:
+        ax.set_xlabel("dim 0"); ax.set_ylabel("dim 1"); ax.set_zlabel("dim 2")
+        ax.view_init(elev=18, azim=35)
+    else:
+        ax.set_xlabel("dim 0"); ax.set_ylabel("dim 1")
+
+    if len(handles) <= 20 and len(handles) > 0:
+        ax.legend(handles, labels_for_legend, title="Focused clusters", fontsize='small', loc="best")
+
+    plt.tight_layout()
+    if save_path is not None and created_fig:
+        plt.savefig(save_path, bbox_inches='tight', dpi=150)
+    return ax
 
 def prep_data(df, scaler, umap_params = None, wUMAP = True, id_col='name', y_value = 'KL-Score', save_path = None):
         df_scaled = df.copy()
