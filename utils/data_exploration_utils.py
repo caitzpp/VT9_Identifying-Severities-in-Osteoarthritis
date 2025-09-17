@@ -249,3 +249,125 @@ def check_img_resp_cluster_klscore(df, cluster_label, klscore, img_path,cluster_
     plt.tight_layout()
     plt.show()
     return idtocheck
+
+def boxplot(
+    df: pd.DataFrame,
+    y_list: list,
+    x: str,
+    hue: str | None = None,
+    title: str | None = None,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    figsize_per_panel=(5.5, 4.0),
+    n_cols: int | None = None,
+    order: list | None = None,
+    hue_order: list | None = None,
+    sharex: bool = False,
+    sharey: bool = False,
+    show_points: bool = True,
+    points_alpha: float = 0.35,
+    rotate_xticks: int = 30,
+    showfliers: bool = False,
+    whis: tuple | float = (5, 95),
+    tight_rect=(0, 0, 0.92, 0.95),
+    savepath: str | None = None,
+    filename: str | None = None,
+):
+    # --- Category order handling (respects CategoricalDtype if present) ---
+    if order is None:
+        if pd.api.types.is_categorical_dtype(df[x]):
+            order = list(df[x].cat.categories)
+            order.sort()  # sort alphanumerically within categorical levels
+        else:
+            order = list(pd.unique(df[x].dropna()))
+            order.sort()  # sort alphanumerically if not categorical
+    if hue is not None and hue_order is None:
+        if pd.api.types.is_categorical_dtype(df[hue]):
+            hue_order = list(df[hue].cat.categories)
+            hue_order.sort()  # sort alphanumerically within categorical levels
+        else:
+            hue_order = list(pd.unique(df[hue].dropna()))
+            hue_order.sort()  # sort alphanumerically if not categorical
+
+    # --- Grid geometry ---
+    n = len(y_list)
+    if n_cols is None:
+        n_cols = 2 if n <= 4 else 3  # sensible default
+    n_rows = math.ceil(n / n_cols)
+    fig_w = figsize_per_panel[0] * n_cols
+    fig_h = figsize_per_panel[1] * n_rows
+
+    # --- Style (lightweight, readable) ---
+    sns.set_context("talk")
+    sns.set_style("whitegrid", {"axes.grid": True, "grid.linestyle": "--", "grid.alpha": 0.35})
+
+    fig, axes = plt.subplots(
+        n_rows, n_cols, figsize=(fig_w, fig_h), sharex=sharex, sharey=sharey,
+        constrained_layout=False
+    )
+    axes = np.atleast_1d(axes).ravel()
+
+    legend_handles, legend_labels = None, None
+
+    for i, y in enumerate(y_list):
+        ax = axes[i]
+
+        # Boxplot
+        sns.boxplot(
+            data=df, x=x, y=y, hue=hue, order=order, hue_order=hue_order,
+            ax=ax, dodge=True, showfliers=showfliers, whis=whis
+        )
+
+        # Optional jittered points overlay (helps see sample size & spread)
+        if show_points:
+            # stripplot is faster / less overplotty than swarm for big n
+            sns.stripplot(
+                data=df, x=x, y=y, hue=hue, order=order, hue_order=hue_order,
+                ax=ax, dodge=True if hue else False, alpha=points_alpha, jitter=0.18,
+                linewidth=0
+            )
+
+        # Collect legend once (we'll add a single figure legend)
+        if hue and legend_handles is None:
+            legend_handles, legend_labels = ax.get_legend_handles_labels()
+
+        # Clean up duplicate legends in each subplot
+        if hue:
+            ax.legend_.remove()
+
+        # Labels & ticks
+        ax.set_title(f"{y} by {x}", fontsize=12)
+        ax.set_xlabel(xlabel if xlabel else x, fontsize=10)
+        ax.set_ylabel(ylabel if ylabel else y, fontsize=10)
+        ax.tick_params(axis="x", rotation=rotate_xticks)
+
+        # A bit of visual polish
+        sns.despine(ax=ax, left=False, bottom=False)
+
+    # Remove any unused axes
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    # Global title
+    if title:
+        fig.suptitle(title, fontsize=14)
+
+    # Single shared legend (if hue)
+    if hue and legend_handles:
+        fig.legend(legend_handles[:len(hue_order) if hue_order else None],
+                   legend_labels[:len(hue_order) if hue_order else None],
+                   loc="center left", bbox_to_anchor=(0.99, 0.5), frameon=False, title=hue)
+
+    plt.tight_layout(rect=tight_rect)
+
+    # Saving
+    if savepath is not None:
+        os.makedirs(savepath, exist_ok=True)
+        if filename is None:
+            base = f"box_{x}_vs_{len(y_list)}y"
+            if hue:
+                base += f"_by_{hue}"
+            filename = base + ".png"
+        fig.savefig(os.path.join(savepath, filename), dpi=160, bbox_inches="tight")
+
+    return fig, axes
