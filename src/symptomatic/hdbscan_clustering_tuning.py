@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 #import hdbscan
 from umap import UMAP
 from sklearn.cluster import HDBSCAN
-from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score
+from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score, silhouette_score, davies_bouldin_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.utils import shuffle
 from scipy.stats import entropy
@@ -165,12 +165,19 @@ if __name__ == "__main__":
         joblib.dump(clusterer, clusterer_path)
         artifacts['clusterer'] = clusterer_path
 
+        n_clusters = len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0)
+
         ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
+        adj_chscore = ch_score / n_clusters if n_clusters > 1 else 0
+        sil_score = silhouette_score(X_umap, clusterer.labels_)
+        db_score = davies_bouldin_score(X_umap, clusterer.labels_)
 
         wandb.log(
-            {'calinski_harabasz_score': ch_score,
-             'calinski_harabasz_scorev2': int(ch_score)}
-        )
+            {'calinski_harabasz_score': np.round(ch_score, 3),
+             'calinski_harabasz_score_adjusted': np.round(adj_chscore, 3),
+             'silhouette_score': np.round(sil_score, 3),
+             'davies_bouldin_score': np.round(db_score, 3)
+        })
 
         base_name, results_df = save_results(df=df2_scaled, clusterer=clusterer, params={
             'umap': umap_params,
