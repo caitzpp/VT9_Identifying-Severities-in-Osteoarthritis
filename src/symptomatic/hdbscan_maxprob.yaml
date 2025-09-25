@@ -1,4 +1,4 @@
-program: src/symptomatic/hdbscan_clustering_tuning.py
+program: src/symptomatic/hdbscan_clustering_tuning_sweep.py
 project: StructuredData_HDBSCAN_Clustering_Filtered
 description: Using filtered data, taking into account that questionnaires were filled out on a patient/visit basis and not per knee. Values were simply filtered out.
 name: max_avgprobs_woCV
