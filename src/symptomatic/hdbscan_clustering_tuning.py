@@ -177,9 +177,9 @@ if __name__ == "__main__":
             'hdbscan': hdbscan_params
         }, scaler=scaler, save_dir=save_dir_temp, artifacts = artifacts, filename=filename, id='name', use_wandb=True)
     
-        df_merged, df_filtered = get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True)
+        _, _ = get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True)
         
-        results = external_validation(df_filtered, externaldf, label = 'cluster_label', external_cols = externalcols, leftid_col = 'id', rightid_col='id', use_wandb=True)
+        results = external_validation(results_df, externaldf, label = 'cluster_label', external_cols = externalcols, leftid_col = 'id', rightid_col='id', use_wandb=True)
 
 
 

@@ -587,7 +587,14 @@ def save_umap_true_plot(X_umap, y, out_path, umap_params, title_suffix=""):
 
 
 def external_validation(df, externaldf, label = 'cluster_label', external_cols = ['mri_cart_yn', 'mri_osteo_yn'], leftid_col = 'id', rightid_col = 'id', use_wandb = False):
-    df_ev = df.merge(externaldf, left_on=leftid_col, right_on=rightid_col, how='left', validate='one_to_one')
+    df['id'] = df['id'].apply(fix_id)
+
+    #noise_count = (results_df[score]==-1).sum()
+
+    df_filtered = df[df[label] != -1].copy()
+    df_ev = df_filtered.merge(externaldf, left_on=leftid_col, right_on=rightid_col, how='left', validate='one_to_one')
+    print(f"External validation: {len(df_ev)} out of {len(df_filtered)} clustered points have external labels.")
+    df_ev.dropna(subset=external_cols, inplace=True)
 
     results = get_metrics_external(df = df_ev, externalcol = external_cols, label = label)
 
