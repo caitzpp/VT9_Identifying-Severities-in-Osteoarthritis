@@ -8,13 +8,13 @@ from IPython.display import display
 from itertools import product
 import joblib
 import datetime
-from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold
+from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold, external_validation
 
 from sklearn.preprocessing import StandardScaler
 #import hdbscan
 from umap import UMAP
 from sklearn.cluster import HDBSCAN
-from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score
+from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score, silhouette_score, davies_bouldin_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.utils import shuffle
 from scipy.stats import entropy
@@ -44,8 +44,9 @@ os.makedirs(save_dir, exist_ok=True)
 # df_filename = "inmodi_data_personalinformation_kl_woSC.csv"
 folder = "2025-08-11_data_exploration"
 df_filename = "inmodi_data_questionnaire_kl_woSC.csv"
-# kl_file = "inmodi_data_personalinformation_kl.csv"
-# kl_filepath = os.path.join(proc_dir, folder, kl_file)
+
+externaldf_path = os.path.join(base_dir, '2025-09-25_mrismall.csv')
+externalcols = ['mri_cart_yn', 'mri_osteo_yn']
 
 #Choose relevant columns
 # cols = ['name',
@@ -145,6 +146,7 @@ if __name__ == "__main__":
         hdbscan_params['min_samples'] = None
 
     df = pd.read_csv(os.path.join(proc_dir, folder, df_filename))
+    externaldf = pd.read_csv(externaldf_path)
 
     df2 = df[cols].copy()
 
@@ -177,12 +179,19 @@ if __name__ == "__main__":
         joblib.dump(clusterer, clusterer_path)
         artifacts['clusterer'] = clusterer_path
 
+        n_clusters = len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0)
+
         ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
+        adj_chscore = ch_score / n_clusters if n_clusters > 1 else 0
+        sil_score = silhouette_score(X_umap, clusterer.labels_)
+        db_score = davies_bouldin_score(X_umap, clusterer.labels_)
 
         wandb.log(
-            {'calinski_harabasz_score': ch_score,
-             'calinski_harabasz_scorev2': int(ch_score)}
-        )
+            {'calinski_harabasz_score': np.round(ch_score, 3),
+             'calinski_harabasz_score_adjusted': np.round(adj_chscore, 3),
+             'silhouette_score': np.round(sil_score, 3),
+             'davies_bouldin_score': np.round(db_score, 3)
+        })
 
         base_name, results_df = save_results(df=df2_scaled, clusterer=clusterer, params={
             'umap': umap_params,
@@ -190,6 +199,8 @@ if __name__ == "__main__":
         }, scaler=scaler, save_dir=save_dir_temp, artifacts = artifacts, filename=filename, id='name', use_wandb=True)
     
         get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True)
+        
+        results = external_validation(results_df, externaldf, label = 'cluster_label', external_cols = externalcols, leftid_col = 'id', rightid_col='id', use_wandb=True)
 
         # Plot the results
         plot_hdbscan(X_umap, clusterer.labels_,

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from sklearn import metrics
-from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_fscore_support, f1_score, cohen_kappa_score, average_precision_score
+from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_fscore_support, f1_score, cohen_kappa_score, average_precision_score, normalized_mutual_info_score
 from scipy import stats
 import torch.nn.functional as F
 from scipy.ndimage.filters import uniform_filter1d
@@ -262,11 +262,14 @@ def get_metrics_external(df, externalcol, label = 'cluster_label'):
 
         auc = metrics.auc(fpr, tpr)
 
+        nmi = normalized_mutual_info_score(df[label], df[col])
+
         col_results = {
             'spearman' + '_' + str(col): res[0],
             'auc' + '_' + str(col): auc,
             'fpr' + '_' + str(col): fpr,
             'tpr' + '_' + str(col): tpr,
+            'nmi' + '_' + str(col): nmi
         }
 
         results.update(col_results)
