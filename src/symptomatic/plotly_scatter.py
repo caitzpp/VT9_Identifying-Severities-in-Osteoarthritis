@@ -8,8 +8,11 @@ from utils.plot_utils import plotly_hdbscan_highlight_kl, plotly_hdbscan_highlig
 proc_dir = config.PROC_DATA_PATH
 
 folder = "2025-08-23_hdbscan"
+run="run2"
+# folder = "2025-09-25_hdbscan"
 folder_date = folder.split('_')[0]
-run = "run2"
+# run = "run42"
+# run = "run74"
 
 cluster_num = None
 reversed = True

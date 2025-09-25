@@ -100,7 +100,7 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (needed for 3D)
 
 def make_cluster_color_map(labels, cmap=plt.cm.tab20):
     unique_labels = sorted(set(labels) - {-1})   # exclude noise
-    n_colors = len(unique_labels)
+    n_colors = len(unique_labels) + 2
     n_colors = max(n_colors, 1)
     color_map = {}
     color_list = [plt.cm.Spectral(t) for t in np.linspace(0, 1, n_colors)]

@@ -186,9 +186,14 @@ if __name__ == "__main__":
         sil_score = silhouette_score(X_umap, clusterer.labels_)
         db_score = davies_bouldin_score(X_umap, clusterer.labels_)
 
+        noise_count = np.sum(clusterer.labels_ == -1)
+        # if noise_count > 0:
+
+
         wandb.log(
             {'calinski_harabasz_score': np.round(ch_score, 3),
              'calinski_harabasz_score_adjusted': np.round(adj_chscore, 3),
+            #  'calinski_harabasz_score_adjusted_v2': np.round(adj_chscore2, 3)
              'silhouette_score': np.round(sil_score, 3),
              'davies_bouldin_score': np.round(db_score, 3)
         })
