@@ -251,7 +251,7 @@ def get_metrics(df, score, label = 'KL-Score'):
 
     return res[0], auc, auc_mid, auc_mid2, auc_sev
 
-def get_metrics_external(df, externalcol, label = 'cluster_label'):
+def get_metrics_external(df, externalcol, chadjusted, label = 'cluster_label'):
     results = {}
     for i in range(len(externalcol)):
         col = externalcol[i]
@@ -264,12 +264,15 @@ def get_metrics_external(df, externalcol, label = 'cluster_label'):
 
         nmi = normalized_mutual_info_score(df[label], df[col])
 
+        metric = ch_externalval_score(chadjusted, auc)
+
         col_results = {
             'spearman' + '_' + str(col): res[0],
             'auc' + '_' + str(col): auc,
             'fpr' + '_' + str(col): fpr,
             'tpr' + '_' + str(col): tpr,
-            'nmi' + '_' + str(col): nmi
+            'nmi' + '_' + str(col): nmi,
+            'evalmetric' + '_' + str(col): metric
         }
 
         results.update(col_results)
@@ -500,3 +503,11 @@ def normalized_entropy(p):
     raw_entropy = entropy(p, base=2)
     max_entropy = np.log2(len(p)) if len(p) > 1 else 1  # avoid log2(1) = 0
     return raw_entropy / max_entropy
+
+
+def ch_externalval_score(CHadjusted, auc):
+    if auc > 0.5:
+        return CHadjusted * (auc - 0.5) * 2
+    else:
+        metric = 0
+        return metric

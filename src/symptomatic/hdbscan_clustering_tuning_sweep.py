@@ -200,7 +200,7 @@ if __name__ == "__main__":
     
         get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True)
         
-        results = external_validation(results_df, externaldf, label = 'cluster_label', external_cols = externalcols, leftid_col = 'id', rightid_col='id', use_wandb=True)
+        results = external_validation(results_df, externaldf, chadjustd= adj_chscore, label = 'cluster_label', external_cols = externalcols, leftid_col = 'id', rightid_col='id', use_wandb=True)
 
         # Plot the results
         plot_hdbscan(X_umap, clusterer.labels_,

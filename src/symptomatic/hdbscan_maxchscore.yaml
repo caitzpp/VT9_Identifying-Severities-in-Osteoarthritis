@@ -1,11 +1,11 @@
 program: src/symptomatic/hdbscan_clustering_tuning_sweep.py
 project: StructuredData_Questionnaire_HDBSCAN_Clustering_Filtered_v2
 description: Using different calinski score, that penalized many clusters
-name: max_calinski_harabasz_3d_v2
+name: max_evalmetric_mri_cart_yn
 method: random
 metric:
   goal: maximize
-  name: calinski_harabasz_score_adjusted
+  name: evalmetric_mri_cart_yn
 parameters:
   wUMAP:
     values: [True]
