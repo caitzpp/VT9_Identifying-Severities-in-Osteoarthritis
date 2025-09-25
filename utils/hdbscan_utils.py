@@ -10,8 +10,9 @@ from sklearn.cluster import HDBSCAN
 from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score
 from scipy.stats import entropy
 
-from utils.evaluation_utils import normalized_entropy, get_metrics
+from utils.evaluation_utils import normalized_entropy, get_metrics, get_metrics_external
 from utils.load_utils import fix_id
+
 
 
 def get_unique_filepath(base_path):
@@ -366,11 +367,14 @@ def plot_hdbscan_highlight_kl(
         plt.savefig(save_path, bbox_inches='tight', dpi=150)
     return ax
 
-def prep_data(df, scaler, umap_params = None, wUMAP = True, id_col='name', y_value = 'KL-Score', save_path = None):
+def prep_data(df, scaler, Xcol = None, umap_params = None, wUMAP = True, id_col='name', y_value = 'KL-Score', save_path = None):
         df_scaled = df.copy()
         y = df_scaled[y_value]
         ids = df_scaled[id_col]
-        X = df_scaled.drop(columns=[id_col, y_value])
+        if Xcol is None:
+            X = df_scaled.drop(columns=[id_col, y_value])
+        else:
+            X = df_scaled[Xcol]
         X_scaled = scaler.fit_transform(X)
 
         if wUMAP:
@@ -497,15 +501,16 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='clus
                 "noise_count": noise_count,
                 "avg_probs": avg_probs.mean(),
                 "entropy": membership_entropy,
-                "normalized_entropy": n_entropy,
+                "normalized_entropy_kl_clusterlabel": n_entropy,
                 "missing_kl_scores": len(df_merged[df_merged[label].isna()]),
-                "spearman_correlation": spr,
-                "auc": auc,
-                "auc_mid": auc_mid,
-                "auc_mid2": auc_mid2,
-                "auc_sev": auc_sev,
-                "nmi": nmi
+                "spearman_correlation_klscore": spr,
+                "auc_kl": auc,
+                "auc_mid_kl": auc_mid,
+                "auc_mid2_kl": auc_mid2,
+                "auc_sev_kl": auc_sev,
+                "nmi_kl": nmi
             })
+        return df_merged, df_filtered
 
 def get_metrics_hdbscan_radiographic(results_df, save_dir_temp, base_name, score='cluster_label', label='label', use_wandb=True, fold = None):
     if fold is None:
@@ -579,3 +584,15 @@ def save_umap_true_plot(X_umap, y, out_path, umap_params, title_suffix=""):
     plt.tight_layout()
     plt.savefig(out_path, dpi=200)
     plt.close()
+
+
+def external_validation(df, externaldf, label = 'cluster_label', external_cols = ['mri_cart_yn', 'mri_osteo_yn'], leftid_col = 'id', rightid_col = 'id', use_wandb = False):
+    df_ev = df.merge(externaldf, left_on=leftid_col, right_on=rightid_col, how='left', validate='one_to_one')
+
+    results = get_metrics_external(df = df_ev, externalcol = external_cols, label = label)
+
+    if use_wandb:
+        wandb.log(results)
+
+    return results
+

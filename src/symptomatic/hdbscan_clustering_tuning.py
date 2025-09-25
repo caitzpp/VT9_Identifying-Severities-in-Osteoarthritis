@@ -8,7 +8,7 @@ from IPython.display import display
 from itertools import product
 import joblib
 import datetime
-from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold
+from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold, external_validation
 
 from sklearn.preprocessing import StandardScaler
 #import hdbscan
@@ -31,6 +31,8 @@ proc_dir = config.PROC_DATA_PATH
 #folder = '2025-07-18_hdbscan'
 folder = None
 
+project_name = 'symptomatic_rawq_hdbscan_pipeline_dev'
+
 random_state=42
 stratify_on = 'KL-Score'
 
@@ -46,6 +48,8 @@ folder = "2025-08-11_data_exploration"
 df_filename = "inmodi_data_questionnaire_kl_woSC.csv"
 
 #TODO: bring in MRI data, eval on jsn and osteophyte data specifically
+externaldf_path = os.path.join(base_dir, '2025-09-25_mrismall.csv')
+externalcols = ['mri_cart_yn', 'mri_osteo_yn']
 
 cols = [
     # 'record_id', 'visit', 'side', 
@@ -108,7 +112,14 @@ if __name__ == "__main__":
     np.random.seed(random_state)
     run_folder_name, run_path = get_next_run_folder(save_dir)
 
+    externaldf = pd.read_csv(externaldf_path)
+    df = pd.read_csv(os.path.join(proc_dir, folder, df_filename))
+    df2 = df[cols].copy()
+    df2['is_male'] = df2['gender'].apply(lambda x: 1 if x=='male' else 0)
+    df2 = df2.drop(columns= 'gender')
+
     run = wandb.init(
+        project=project_name,
         name = f"{os.path.basename(save_dir)}_{run_folder_name}"
         , config = config_w
         )
@@ -127,9 +138,6 @@ if __name__ == "__main__":
     if hdbscan_params['min_samples'] == -1:
         hdbscan_params['min_samples'] = None
     
-    df = pd.read_csv(os.path.join(proc_dir, folder, df_filename))
-
-    df2 = df[cols].copy()
 
     if replace_NanValues==False:
         print("Dataframe before dropping NaN values: ", df2.shape)
@@ -138,9 +146,6 @@ if __name__ == "__main__":
         print()
         print("Dataframe after dropping NaN values: ", df2.shape)
 
-    # 'gender' convert to int
-    df2['is_male'] = df['gender'].apply(lambda x: 1 if x=='male' else 0)
-    df2 = df2.drop(columns= 'gender')
     save_folder = run_folder_name
     filename = f"{run.name}_umap_hdbscan_scaled"
 
@@ -149,7 +154,7 @@ if __name__ == "__main__":
 
     scaler = StandardScaler()
     
-    X_umap, y, df2_scaled, artifacts = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', save_path=save_dir_temp)
+    X_umap, y, df2_scaled, artifacts = prep_data(df=df2, scaler=scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', save_path=save_dir_temp)
 
     kf = StratifiedKFold(n_splits=k, shuffle=True, random_state=random_state) if k is not None else None
 
@@ -172,12 +177,16 @@ if __name__ == "__main__":
             'hdbscan': hdbscan_params
         }, scaler=scaler, save_dir=save_dir_temp, artifacts = artifacts, filename=filename, id='name', use_wandb=True)
     
-        get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True)
+        df_merged, df_filtered = get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True)
+        
+        results = external_validation(df_filtered, externaldf, label = 'cluster_label', external_cols = externalcols, leftid_col = 'id', rightid_col='id', use_wandb=True)
+
+
 
         # Plot the results
-        plot_hdbscan(X_umap, clusterer.labels_,
-                    probabilities=clusterer.probabilities_,
-                    save_path=os.path.join(save_dir_temp, f"{base_name}_plot.png"))
+        # plot_hdbscan(X_umap, clusterer.labels_,
+        #             probabilities=clusterer.probabilities_,
+        #             save_path=os.path.join(save_dir_temp, f"{base_name}_plot.png"))
     elif kf is not None:
         print("\n--- Cross-validation ---")
 

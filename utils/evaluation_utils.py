@@ -251,6 +251,29 @@ def get_metrics(df, score, label = 'KL-Score'):
 
     return res[0], auc, auc_mid, auc_mid2, auc_sev
 
+def get_metrics_external(df, externalcol, label = 'cluster_label'):
+    results = {}
+    for i in range(len(externalcol)):
+        col = externalcol[i]
+
+        res = stats.spearmanr(df[label].tolist(), df[col].tolist())
+
+        fpr, tpr, thresholds = roc_curve(np.array(df[col]),np.array(df[label]))
+
+        auc = metrics.auc(fpr, tpr)
+
+        col_results = {
+            'spearman' + '_' + str(col): res[0],
+            'auc' + '_' + str(col): auc,
+            'fpr' + '_' + str(col): fpr,
+            'tpr' + '_' + str(col): tpr,
+        }
+
+        results.update(col_results)
+
+    return results
+
+
 def create_scores_dataframe(path_to_anom_scores, files, metric):
     for i,file in enumerate(files):
         if i ==0:
