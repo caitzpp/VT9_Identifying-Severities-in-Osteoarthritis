@@ -13,10 +13,11 @@ DATA_PATH = config.PATH_TO_RESULTS
 SAVE_PATH = config.OUTPUT_PATH
 PATH_TO_ANOM_SCORES = config.PATH_TO_ANOM
 
-stages = ['stage2'] #['ss', 'stage2', 'stage3', 'stage_severe_pred']
+stages = ['ss'] #['ss', 'stage2', 'stage3', 'stage_severe_pred']
 # TRAIN_PLATEAU_EPOCH = 400
 
-MOD_NAME="mod_2"
+MOD_NAME="mod_smallimg2"
+lr = 0.0005
 
 MARGIN = None
 
@@ -67,6 +68,20 @@ stage_dict = {
             'train_epoch': 990,
             'seeds': [1001, 138647, 193, 34, 44]
         }
+    },
+    'mod_smallimg': {
+        'ss': {
+            'metric': 'centre_mean',
+            'train_epoch': 400,
+            'seeds': [1001, 138647, 193, 34, 44, 71530, 875688, 8765, 985772, 244959]
+        },
+    },
+    'mod_smallimg2': {
+        'ss': {
+            'metric': 'centre_mean',
+            'train_epoch': 400,
+            'seeds': [1001, 138647, 193, 34, 44, 71530, 875688, 8765, 985772, 244959]
+        },
     }
 
 }
@@ -97,17 +112,17 @@ if __name__=="__main__":
         if MARGIN:
             if isinstance(train_epoch, dict):
                 for seed in seeds:
-                    files = [file for file in files_total if ('on_test_set' not in file ) & (MOD_NAME in file) & (str(seed) in file) & (str(MARGIN) in file)]
-                    #files = [file for file in files_total if (('epoch_' + str(train_epoch[str(seed)]) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file) & (str(seed) in file) & (str(MARGIN) in file)]
+                    files = [file for file in files_total if ('on_test_set' not in file ) & (f"{MOD_NAME}_" in file) & (str(seed) in file) & (str(MARGIN) in file) & (f"lr_{str(lr)}" in file)]
+                    #files = [file for file in files_total if (('epoch_' + str(train_epoch[str(seed)]) ) in file) & ('on_test_set' not in file ) & (f"{MOD_NAME}_" in file) & (str(seed) in file) & (str(MARGIN) in file) & (f"lr_{str(lr)}" in file)]
             else:
-                files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file) & (str(MARGIN) in file)]
+                files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' not in file ) & (f"{MOD_NAME}_" in file) & (str(MARGIN) in file) & (f"lr_{str(lr)}" in file)]
 
         else:
             if isinstance(train_epoch, dict):
                 for seed in seeds:
-                    files = [file for file in files_total if (('epoch_' + str(train_epoch[str(seed)]) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file) & (str(seed) in file)]
+                    files = [file for file in files_total if (('epoch_' + str(train_epoch[str(seed)]) ) in file) & ('on_test_set' not in file ) & (f"{MOD_NAME}_" in file) & (str(seed) in file) & (f"lr_{str(lr)}" in file)]
             else:
-                files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' not in file ) & (MOD_NAME in file)]
+                files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' not in file ) & (f"{MOD_NAME}_" in file) & (f"lr_{str(lr)}" in file)]
 
         # files = ['stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_1001_N_30_epoch_1390', 
         #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_138647_N_30_epoch_1190', 
@@ -144,9 +159,9 @@ if __name__=="__main__":
         
         if isinstance(train_epoch, dict):
             for seed in seeds:
-                files = [file for file in files_total if (('epoch_' + str(train_epoch[str(seed)]) ) in file) & ('on_test_set' in file ) & (MOD_NAME in file) & (str(seed) in file)]
+                files = [file for file in files_total if (('epoch_' + str(train_epoch[str(seed)]) ) in file) & ('on_test_set' in file ) & (f"{MOD_NAME}_" in file) & (str(seed) in file) & (f"lr_{str(lr)}" in file)]
         else:
-            files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' in file ) & (MOD_NAME in file)]
+            files = [file for file in files_total if (('epoch_' + str(train_epoch) ) in file) & ('on_test_set' in file ) & (f"{MOD_NAME}_" in file) & (f"lr_{str(lr)}" in file)]
 
         # files = ['stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_1001_N_30_on_test_set_epoch_1390', 
         #          'stage2_margin_1.1301999999999637_mod_2_bs_1_task_test_lr_1e-06_shots_30_N_30_seed_138647_N_30_on_test_set_epoch_1190', 
