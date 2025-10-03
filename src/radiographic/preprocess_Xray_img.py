@@ -7,17 +7,17 @@ import pandas as pd
 import config
 from utils.load_utils import load_image
 
-box_width = 700
-box_height = 700
+box_width = 800
+box_height = 800
 
-t=200
+t=100
 
 DATAPATH = config.SCHULTHESS_DATAPATH
 test_datapath = os.path.join(DATAPATH, 'test')
 train_datapath = os.path.join(DATAPATH, 'train')
 
-# datapaths = [test_datapath, train_datapath]
-datapaths = [test_datapath]
+datapaths = [test_datapath, train_datapath]
+# datapaths = [test_datapath]
 
 if __name__ == '__main__':
     df = pd.DataFrame(columns=['file', 'top', 'bottom', 'left', 'right', 'joint_center_x', 'joint_center_y'])
@@ -50,6 +50,12 @@ if __name__ == '__main__':
                 joint_row = np.argmax(row_sums)
 
             center_col = img.shape[1] // 2
+            # col_sums = np.sum(thres, axis=0)
+            # # print(col_sums[center_col])
+            # center_col = np.argmin(col_sums[512-100:512+100]) + 512 - 100
+            # while center_col > 550 or center_col<450 :
+            #     col_sums[center_col] = 0
+            #     center_col = np.argmin(col_sums)
 
             joint_center_x = center_col
             joint_center_y = joint_row
