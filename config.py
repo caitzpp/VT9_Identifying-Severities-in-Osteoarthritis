@@ -15,12 +15,14 @@ SCHULTHESS_DATAFOLDER = os.getenv("SCHULTHESS_DATAFOLDER", "images_knee")
 if SCHULTHESS_DATAFOLDER == "":
     SCHULTHESS_DATAPATH = DATA_PATH
 else:
-    SCHULTHESS_DATAPATH = os.path.join(DATA_PATH, SCHULTHESS_DATAFOLDER)
+    SCHULTHESS_DATAPATH = os.path.join(RAW_DATA_PATH, SCHULTHESS_DATAFOLDER)
 
 CHENETAL_DATAPATH = os.path.join(DATA_PATH, os.getenv("CHENETAL_DATAFOLDER", "kaggle dataset"))
 
 RESULTS_PATH = os.getenv("RESULTS_PATH", "./results")
 PATH_TO_ANOM = os.path.join(RESULTS_PATH, "dfs")
 PATH_TO_RESULTS = os.path.join(RESULTS_PATH, "results")
-FEATURE_PATH = os.path.join(RESULTS_PATH, "features")
+FEATURE_PATH = RESULTS_PATH
 DIR_PATH = os.getenv("DIR_PATH", "./SS-FewSOME_Disease_Severity_Knee_Osteoarthritis")
+
+HDBSCAN_SYMP_WANDBAPI_KEY = os.getenv("HDBSCAN_SYMP_WANDBAPI_KEY", "")

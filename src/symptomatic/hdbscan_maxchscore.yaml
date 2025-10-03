@@ -1,0 +1,39 @@
+program: src/symptomatic/hdbscan_clustering_tuning_sweep.py
+project: StructuredData_Questionnaire_HDBSCAN_Clustering_Filtered_v2
+description: Using different calinski score, that penalized many clusters
+name: max_evalmetric_mri_cart_yn
+method: random
+metric:
+  goal: maximize
+  name: evalmetric_mri_cart_yn
+parameters:
+  wUMAP:
+    values: [True]
+  replace_NanValues:
+    values: [False]
+  umap.n_neighbors:
+    values: [5, 10, 15, 20, 30, 50] #[20]
+  umap.min_dist:
+    values: [0.001, 0.01, 0.05, 0.1, 0.3, 0.5] #[0.5]
+  umap.random_state:
+    values: [42]
+  umap.metric:
+    values: ['cosine', 'euclidean', 'manhattan'] #['euclidean']
+  umap.n_components:
+    values: [3]
+  hdbscan.min_cluster_size:
+    values: [5, 7, 10, 15, 20, 30] #[30]
+  hdbscan.min_samples:
+    values: [-1, 3, 5, 7, 10, 15] #[5]
+  hdbscan.cluster_selection_method:
+    values: ['eom', 'leaf'] #['eom']
+  hdbscan.alpha:
+    values: [0.8, 1.0, 1.5, 2.0, 3.0] #[0.8]
+  hdbscan.metric:
+    values: ['euclidean', 'manhattan', 'cosine'] #['manhattan']
+  hdbscan.cluster_selection_epsilon:
+    values: [0.0]
+  hdbscan.leaf_size:
+    values: [40, 10, 20]
+  # k-cv:
+  #   values: [5]

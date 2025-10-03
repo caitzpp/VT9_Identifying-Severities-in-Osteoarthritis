@@ -179,3 +179,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+#specific to one of my own environments
+activate_conda.txt 
+
+# Throwaway file that I use for troubleshooting
+notebooks/1_modality_specific/symptomatic/troubleshooting.ipynb
+wandb/
+troubleshooting.ipynb
+troubleshooting.py

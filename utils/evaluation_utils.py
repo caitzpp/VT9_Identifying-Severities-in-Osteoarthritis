@@ -2,10 +2,11 @@ import pandas as pd
 import numpy as np
 import os
 from sklearn import metrics
-from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_fscore_support, f1_score, cohen_kappa_score, average_precision_score
+from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_fscore_support, f1_score, cohen_kappa_score, average_precision_score, normalized_mutual_info_score
 from scipy import stats
 import torch.nn.functional as F
 from scipy.ndimage.filters import uniform_filter1d
+from scipy.stats import entropy
 
 def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix, test_data=True):
     '''
@@ -217,37 +218,67 @@ def create_scores_dataframe(path_to_anom_scores, files, metric):
     df.iloc[:,2:] = df.iloc[:,2:] / len(files)
     return df
 
-def get_metrics(df, score):
+def get_metrics(df, score, label = 'KL-Score'):
+    #'label' is ground truth
 
-    res = stats.spearmanr(df[score].tolist(), df['label'].tolist())
+    res = stats.spearmanr(df[score].tolist(), df[label].tolist())
 
     df['binary_label'] = 0
-    df.loc[df['label'] > 0, 'binary_label'] = 1
+    df.loc[df[label] > 0, 'binary_label'] = 1
     fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
     auc = metrics.auc(fpr, tpr)
 
 
     df['binary_label'] = 0
-    df.loc[df['label'] > 1, 'binary_label'] = 1
+    df.loc[df[label] > 1, 'binary_label'] = 1
 
     fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
     auc_mid = metrics.auc(fpr, tpr)
 
 
     df['binary_label'] = 0
-    df.loc[df['label'] > 2, 'binary_label'] = 1
+    df.loc[df[label] > 2, 'binary_label'] = 1
     fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
     auc_mid2 = metrics.auc(fpr, tpr)
 
 
     df['binary_label'] = 0
-    df.loc[df['label'] == 4, 'binary_label'] = 1
+    df.loc[df[label] == 4, 'binary_label'] = 1
     fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
     auc_sev = metrics.auc(fpr, tpr)
 
 
 
     return res[0], auc, auc_mid, auc_mid2, auc_sev
+
+def get_metrics_external(df, externalcol, chadjusted, label = 'cluster_label'):
+    results = {}
+    for i in range(len(externalcol)):
+        col = externalcol[i]
+
+        res = stats.spearmanr(df[label].tolist(), df[col].tolist())
+
+        fpr, tpr, thresholds = roc_curve(np.array(df[col]),np.array(df[label]))
+
+        auc = metrics.auc(fpr, tpr)
+
+        nmi = normalized_mutual_info_score(df[label], df[col])
+
+        metric = ch_externalval_score(chadjusted, auc)
+
+        col_results = {
+            'spearman' + '_' + str(col): res[0],
+            'auc' + '_' + str(col): auc,
+            'fpr' + '_' + str(col): fpr,
+            'tpr' + '_' + str(col): tpr,
+            'nmi' + '_' + str(col): nmi,
+            'evalmetric' + '_' + str(col): metric
+        }
+
+        results.update(col_results)
+
+    return results
+
 
 def create_scores_dataframe(path_to_anom_scores, files, metric):
     for i,file in enumerate(files):
@@ -463,3 +494,20 @@ def combine_results_with_std(
     print(f" • Severe AUC:     {means['sev_auc']:.3f}  ±  {stds['sev_auc']:.3f}")
 
     return dfm, means, stds
+
+
+
+def normalized_entropy(p):
+    p = np.array(p)
+    p = p / p.sum()  # normalize to probability distribution
+    raw_entropy = entropy(p, base=2)
+    max_entropy = np.log2(len(p)) if len(p) > 1 else 1  # avoid log2(1) = 0
+    return raw_entropy / max_entropy
+
+
+def ch_externalval_score(CHadjusted, auc):
+    if auc > 0.5:
+        return CHadjusted * (auc - 0.5) * 2
+    else:
+        metric = 0
+        return metric
