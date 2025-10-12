@@ -174,7 +174,15 @@ if __name__ == "__main__":
         plot_hdbscan(X_umap, clusterer.labels_,
                     probabilities=clusterer.probabilities_,
                     save_path=os.path.join(save_dir_temp, f"{base_name}_plot.png"))
-        
+        wandb.log(
+                {'calinski_harabasz_score': np.round(ch_score, 3),
+                'calinski_harabasz_score_adjusted': np.round(adj_chscore, 3),
+                #  'calinski_harabasz_score_adjusted_v2': np.round(adj_chscore2, 3)
+                'silhouette_score': np.round(sil_score, 3),
+                'davies_bouldin_score': np.round(db_score, 3),
+                'n_clusters': n_clusters,
+                    'noise_count': noise_count,
+            })
         wandb.finish()
     else:
         wandb.log(
