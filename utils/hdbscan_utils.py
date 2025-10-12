@@ -634,10 +634,9 @@ def external_validation_2(df, combined, val_column, cluster_col = 'cluster_label
 def get_hdbscan_umap_defaults():
     umap_keys = ['n_neighbors', 'min_dist', 'n_components', 'metric']
     hdbscan_keys = ['min_cluster_size', 'min_samples', 'cluster_selection_method', 
-                    'metric', 'max_cluster_size',
+                    'metric', 'metric_params', 'max_cluster_size',
                     'cluster_selection_epsilon', 'algorithm', 'leaf_size',
-                    'alpha', 'approx_min_span_tree', 'gen_min_span_tree',
-                    'p', 'allow_single_cluster']
+                    'store_centers', 'alpha']
 
     umap_defaults = {
         'n_neighbors': 15,
@@ -648,21 +647,18 @@ def get_hdbscan_umap_defaults():
     }
 
     hdbscan_defaults = {
-        'min_cluster_size': 5,
+        'min_cluster_size': 10,
         'min_samples': None,
         'cluster_selection_method': 'eom',
         'metric': 'euclidean',
-        # 'metric_params': None,
-        'max_cluster_size': 0,
+        'metric_params': None,
+        'max_cluster_size': None,
         'cluster_selection_epsilon': 0.0,
-        'algorithm': 'best',
+        'algorithm': 'auto',
         'leaf_size': 40,
-        # 'store_centers': 'centroid',
+        'store_centers': 'centroid',
         'alpha': 1.0,
         'approx_min_span_tree': False,
-        'gen_min_span_tree': False,
-        'p': None,
-        'allow_single_cluster': False
     }
 
     return umap_keys, umap_defaults, hdbscan_keys, hdbscan_defaults

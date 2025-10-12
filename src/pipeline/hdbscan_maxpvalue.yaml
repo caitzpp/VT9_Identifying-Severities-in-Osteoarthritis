@@ -1,4 +1,4 @@
-program: src/pipeline/hdbscan_features_clustering_tuning.py
+program: src/pipeline/hdbscan_clustering_tuning_sweep.py
 project: Pipeline_test
 name: test_pipeline
 method: random
@@ -27,7 +27,7 @@ parameters:
   hdbscan.cluster_selection_method:
     values: ['eom', 'leaf'] #['eom']
   hdbscan.alpha:
-    values: [0.8, 1.0, 1.5, 2.0, 3.0] #[0.8]
+    values: [1.0] #[0.8]
   hdbscan.metric:
     values: ['euclidean', 'manhattan', 'cosine'] #['manhattan']
   hdbscan.cluster_selection_epsilon:

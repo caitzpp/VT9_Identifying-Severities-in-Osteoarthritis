@@ -7,7 +7,7 @@ import numpy as np
 import joblib
 import datetime
 from sklearn.preprocessing import StandardScaler
-from hdbscan import HDBSCAN
+from sklearn.cluster import HDBSCAN
 from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score, silhouette_score, davies_bouldin_score
 
 from utils.load_utils import fix_id, get_next_run_folder
