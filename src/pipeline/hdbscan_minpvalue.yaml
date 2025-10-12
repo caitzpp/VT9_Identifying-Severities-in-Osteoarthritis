@@ -1,6 +1,6 @@
 program: src/pipeline/hdbscan_clustering_tuning_sweep.py
 project: Pipeline_test
-name: test_pipeline
+name: test_pipeline2
 method: random
 metric:
   goal: minimize
