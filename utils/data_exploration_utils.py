@@ -208,22 +208,21 @@ def check_img_resp_cluster_klscore(df, cluster_label, klscore, img_path,cluster_
     for i in to_remove:
         if i in idtocheck:
             idtocheck.remove(i)
+    subfolders = ['test', 'train']
     l = []
-    for dirp, dirn, _ in os.walk(img_path):
-        for folder in dirn:
-            basedir = os.path.join(dirp, folder, str(klscore))
-            possible_paths=[]
-            for id in idtocheck:
-                possible_path = id + '.png'
-                possible_paths.append(possible_path)
-            l_dir = os.listdir(basedir)
-            for path in possible_paths:
-                if path in l_dir:
-                    l.append(os.path.join(basedir, path))
-                else:
-                    parent_path = os.path.join(img_path, os.path.basename(path))
-                    l.append(parent_path)
-            break
+    for folder in subfolders:
+        basedir = os.path.join(img_path, folder, str(int(klscore)))
+        possible_paths=[]
+        for id in idtocheck:
+            possible_path = id + '.png'
+            possible_paths.append(possible_path)
+        l_dir = os.listdir(basedir)
+        for path in possible_paths:
+            if path in l_dir:
+                l.append(os.path.join(basedir, path))
+            else:
+                parent_path = os.path.join(img_path, os.path.basename(path))
+                l.append(parent_path)
         break
     if k is not None:
         l = l[:k]
