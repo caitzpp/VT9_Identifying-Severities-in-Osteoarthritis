@@ -3,7 +3,7 @@ project: Pipeline_test
 name: test_pipeline
 method: random
 metric:
-  goal: maximize
+  goal: minimize
   name: conover_comb_pvalue
 parameters:
   wUMAP:
