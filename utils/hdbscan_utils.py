@@ -8,7 +8,8 @@ import wandb
 from umap import UMAP
 from sklearn.cluster import HDBSCAN
 from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score
-from scipy.stats import entropy
+from scipy.stats import entropy, combine_pvalues
+import scikit_posthocs as sp
 
 from utils.evaluation_utils import normalized_entropy, get_metrics, get_metrics_external
 from utils.load_utils import fix_id
@@ -603,3 +604,65 @@ def external_validation(df, externaldf, chadjustd, label = 'cluster_label', exte
 
     return results
 
+def get_pvalues(df):
+    pval = df.where(np.triu(np.ones(df.shape), k=1).astype(bool)).stack().values
+    _, global_p = combine_pvalues(pval, method='stouffer')
+    return pval, global_p
+def conover_test(df, val_column, group_column):
+    conover = sp.posthoc_conover(df, val_col = val_column, group_col = group_column, p_adjust = 'holm')
+    comb_pvalues = get_pvalues(conover)[1]
+    return conover, comb_pvalues
+
+def external_validation_2(df, combined, val_column, cluster_col = 'cluster_label', use_wandb = False):
+    df['id'] = df['id'].apply(fix_id)
+    df_filtered = df[df[cluster_col] != -1].copy()
+    dfc = combined.merge(df_filtered, on='id', how = 'inner')
+    lendfc = len(dfc)
+
+    conover, combine_pvalues = conover_test(dfc, val_column, cluster_col)
+
+    if use_wandb:
+        wandb.log({
+            f"len_dfc": lendfc,
+            f"conover_comb_pvalue": combine_pvalues
+        })
+    return lendfc, combine_pvalues, conover
+
+
+
+
+def get_hdbscan_umap_defaults():
+    umap_keys = ['n_neighbors', 'min_dist', 'n_components', 'metric']
+    hdbscan_keys = ['min_cluster_size', 'min_samples', 'cluster_selection_method', 
+                    'metric', 'max_cluster_size',
+                    'cluster_selection_epsilon', 'algorithm', 'leaf_size',
+                    'alpha', 'approx_min_span_tree', 'gen_min_span_tree',
+                    'p', 'allow_single_cluster']
+
+    umap_defaults = {
+        'n_neighbors': 15,
+        'min_dist': 0.1,
+        'n_components': 2,
+        'metric': 'euclidean',
+        'random_state': 42
+    }
+
+    hdbscan_defaults = {
+        'min_cluster_size': 5,
+        'min_samples': None,
+        'cluster_selection_method': 'eom',
+        'metric': 'euclidean',
+        # 'metric_params': None,
+        'max_cluster_size': 0,
+        'cluster_selection_epsilon': 0.0,
+        'algorithm': 'best',
+        'leaf_size': 40,
+        # 'store_centers': 'centroid',
+        'alpha': 1.0,
+        'approx_min_span_tree': False,
+        'gen_min_span_tree': False,
+        'p': None,
+        'allow_single_cluster': False
+    }
+
+    return umap_keys, umap_defaults, hdbscan_keys, hdbscan_defaults
