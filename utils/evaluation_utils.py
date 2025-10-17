@@ -6,7 +6,10 @@ from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_fsco
 from scipy import stats
 import torch.nn.functional as F
 from scipy.ndimage.filters import uniform_filter1d
-from scipy.stats import entropy
+from scipy.stats import entropy, kruskal, combine_pvalues, spearmanr
+import matplotlib.pyplot as plt
+import seaborn as sns
+import scikit_posthocs as sp
 
 def get_best_epoch(path_to_centre_dists, last_epoch, metric, model_prefix, test_data=True):
     '''
@@ -511,3 +514,58 @@ def ch_externalval_score(CHadjusted, auc):
     else:
         metric = 0
         return metric
+    
+def significant_heatmap(result, alpha = 0.05):
+    mask = result < alpha
+    plt.figure(figsize=(10, 8))
+    ax = sns.heatmap(result, annot=True, fmt=".3f", cmap='coolwarm_r', cbar = False)
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            if not mask[i, j]:
+                ax.text(j + 0.5, i + 0.5, '', ha='center', va='center', color='blue')
+    plt.show()
+
+def get_pvalues(df):
+    pval = df.where(np.triu(np.ones(df.shape), k=1).astype(bool)).stack().values
+    _, global_p = combine_pvalues(pval, method='stouffer')
+    return pval, global_p
+
+def kruskal_wallis_analysis(df, val_column, cluster_col):
+    groups = [group[val_column].values for name, group in df.groupby(cluster_col)]
+    stat, p = kruskal(*groups)
+    print(f"Kruskal–Wallis H-statistic: {stat:.3f}")
+    print(f"p-value: {p:.4f}")
+
+    if stat > 10 and p < 0.05:
+        print("Post-hoc Dunn's test results:")
+        dunns = sp.posthoc_dunn(df, val_col=val_column, group_col=cluster_col, p_adjust='bonferroni')
+        print(f"Combined p-value (Stouffer's method): {get_pvalues(dunns)[1]:.4f}")
+        significant_heatmap(dunns.values)
+        # display(sp.posthoc_dunn(df, val_col=val_column, group_col=cluster_col, p_adjust='bonferroni'))
+        print("Post-hoc Conover's test results:")
+        conover = sp.posthoc_conover(df, val_col=val_column, group_col=cluster_col, p_adjust='holm')
+        print(f"Combined p-value (Stouffer's method): {get_pvalues(conover)[1]:.4f}")
+        # display(sp.posthoc_conover(df, val_col=val_column, group_col=cluster_col, p_adjust='holm'))
+        significant_heatmap(conover.values)
+
+def get_metrics(df, label = "cluster_label", score = "mean"):
+    results = {}
+    labels = df[label].unique().tolist()
+    labels.sort()
+
+    res = spearmanr(df[score].tolist(), df[label].tolist())
+    results['spearmanr'] = res[0]
+
+    for i in range(len(labels)-1):
+        df['binary_label'] = 0
+        df.loc[df[label] > labels[i], 'binary_label'] = 1
+        fpr, tpr, thresholds = roc_curve(np.array(df['binary_label']),np.array(df[score]))
+        auc = metrics.auc(fpr, tpr)
+        ap_score = average_precision_score(np.array(df['binary_label']),np.array(df[score]))
+       
+        results[f'cluster_{labels[i]}'] = {'roc_auc': auc,
+                                             'average_precision': ap_score}
+        # results[f'cluster_{labels[i]}'] = {'roc_auc': auc,
+        #                                    'fpr': fpr,
+        #                                    'tpr': tpr}
+    return results
