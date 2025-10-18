@@ -29,6 +29,11 @@ STAGE = 'ss'
 MOD_PREFIX = "mod_smallimg"
 NEPOCH = 400
 
+pi = False
+koos = True
+oks = True
+gender = True
+
 n = 30
 min_n_clusters = 3
 sil_threshold = 0.5
@@ -52,28 +57,16 @@ anomalyscore_metric = "centre_mean"
 df_aggscore_filename = f"{MOD_PREFIX}_{STAGE}_aggregated_scores.csv"
 df_aggscore_path = os.path.join(outputs, df_aggscore_filename)
 
-cols = [
-    # 'record_id', 'visit', 'side', 
-    # 'pain', 'age', #'ce_height', 'ce_weight',
-    #    'ce_bmi', 'ce_fm', 
-        'gender',  #keep because I believe it will be relevant
-       'name', 
-       'KL-Score',  
-       'oks_q1', 'oks_q2', 'oks_q3', 'oks_q4',
-       'oks_q5', 'oks_q6', 'oks_q7', 'oks_q8', 'oks_q9', 'oks_q10', 'oks_q11',
-       'oks_q12', 'koos_s1', 
-       'koos_s2', 'koos_s3', 'koos_s4', 'koos_s5', 'koos_s6',
-       'koos_s7', 
-       'koos_p1', 'koos_p2', 'koos_p3', 'koos_p4', 'koos_p5',
-       'koos_p6', 'koos_p7', 'koos_p8', 'koos_p9', 
-       'koos_a1', 'koos_a2',
-       'koos_a3', 'koos_a4', 'koos_a5', 'koos_a6', 'koos_a7', 'koos_a8',
-       'koos_a9', 'koos_a10', 'koos_a11', 'koos_a12', 'koos_a13', 'koos_a14',
-       'koos_a15', 'koos_a16', 'koos_a17', 
-       'koos_sp1', 'koos_sp2', 'koos_sp3',
-       'koos_sp4', 'koos_sp5', 
-       'koos_q1', 'koos_q2', 'koos_q3', 'koos_q4'
-       ]
+feature_groups = {
+    "pi": ['pain', 'age', 'ce_bmi', 'ce_fm'],
+    "koos": [f"koos_s{i}" for i in range(1, 8)] +
+             [f"koos_p{i}" for i in range(1, 10)] +
+             [f"koos_a{i}" for i in range(1, 18)] +
+             [f"koos_sp{i}" for i in range(1, 6)] +
+             [f"koos_q{i}" for i in range(1, 5)],
+    "oks": [f"oks_q{i}" for i in range(1, 13)],
+    "gender": ['gender']
+}
 
 wandb.login(key=config.HDBSCAN_SYMP_WANDBAPI_KEY)
 
@@ -85,6 +78,13 @@ if __name__ == "__main__":
         name = f"{os.path.basename(save_dir)}_{run_folder_name}"
         )
     wandb_config = wandb.config
+
+    wandb.log({'ssfewsome_model': MOD_PREFIX})
+
+    # Combine selected columns
+    flags = {"pi": wandb_config.get("pi", True), "koos": wandb_config.get("koos", True), 
+             "oks": wandb_config.get("oks", True), "gender": wandb_config.get("gender", True)}
+    cols = [col for key, active in flags.items() if active for col in feature_groups[key]]
 
     wUMAP = wandb_config.get('wUMAP', True)
     replace_NanValues = wandb_config.get('replace_NanValues', False)

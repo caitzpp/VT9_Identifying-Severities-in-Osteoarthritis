@@ -1,6 +1,6 @@
 program: src/pipeline/hdbscan_clustering_tuning_sweep.py
-project: PipeLineMSE
-name: test_pipeline
+project: Pipeline_UnsupervisedClustering
+name: MinimizeMSE
 method: bayes
 metric:
   goal: minimize
@@ -28,9 +28,7 @@ parameters:
     min: 2
     distribution: int_uniform
   replace_NanValues:
-    values:
-      - "false"
-    distribution: categorical
+    values: [false]
   hdbscan.leaf_size:
     max: 80
     min: 5
@@ -59,6 +57,12 @@ parameters:
       - manhattan
     distribution: categorical
   wUMAP:
-    values:
-      - "true"
-    distribution: categorical
+    values: [true]
+  pi:
+    values: [false]
+  koos:
+    values: [true]
+  oks:
+    values: [true]
+  gender:
+    values: [false]

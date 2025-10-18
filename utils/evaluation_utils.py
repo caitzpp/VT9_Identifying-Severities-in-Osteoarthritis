@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from sklearn import metrics
-from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_fscore_support, f1_score, cohen_kappa_score, average_precision_score, normalized_mutual_info_score
+from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_score, f1_score, recall_score, average_precision_score, normalized_mutual_info_score
 from scipy import stats
 import torch.nn.functional as F
 from scipy.ndimage.filters import uniform_filter1d
@@ -251,28 +251,61 @@ def get_metrics(df, score, label = 'KL-Score'):
 
     return res[0], auc, auc_mid, auc_mid2, auc_sev
 
+def majority_vote(df, cluster_col, feature_col):
+    clusters = df[cluster_col].unique()
+    clusters.sort()
+
+    results = pd.DataFrame({cluster_col: clusters})
+
+    for feature in feature_col:
+        majority_vote = df.groupby(cluster_col)[feature].agg(lambda x: list(x.mode()))
+        majority_vote = pd.DataFrame(majority_vote).reset_index()
+        majority_vote = majority_vote.rename(columns={feature: f'MV_{feature}'})
+        results = results.merge(majority_vote, on = cluster_col, how = 'left')
+
+    return results.dropna(axis=0, how='all')
+
+def handle_modes(x, id_):
+    if len(x) == 1:
+        try:
+            return float(x[0])
+        except Exception as e:
+            print(f"Conversion error for id={id_}: {e}")
+            return None
+    else:
+        return float(0.5) 
+
 def get_metrics_external(df, externalcol, chadjusted, label = 'cluster_label'):
     results = {}
+    
+    maj_vote = majority_vote(df, label, externalcol)
+
     for i in range(len(externalcol)):
-        col = externalcol[i]
+        col_name = f'MV_{externalcol[i]}'
+        maj_vote[col_name] = [
+            handle_modes(row[col_name], row[label])
+            for _, row in maj_vote.iterrows()
+        ]
 
-        res = stats.spearmanr(df[label].tolist(), df[col].tolist())
+        col = externalcol[i] 
+        
+        y_true = df[col]
+        y_pred = df[col_name]
 
-        fpr, tpr, thresholds = roc_curve(np.array(df[col]),np.array(df[label]))
+        res = stats.spearmanr(df[label].tolist(), y_true.tolist())
 
-        auc = metrics.auc(fpr, tpr)
+        nmi = normalized_mutual_info_score(df[label], y_true)
 
-        nmi = normalized_mutual_info_score(df[label], df[col])
-
-        metric = ch_externalval_score(chadjusted, auc)
+        precision=precision_score(y_true, y_pred, average='macro')
+        recall = recall_score(y_true, y_pred, average='macro')
+        f1 = f1_score(y_true, y_pred, average='macro')
 
         col_results = {
             'spearman' + '_' + str(col): res[0],
-            'auc' + '_' + str(col): auc,
-            'fpr' + '_' + str(col): fpr,
-            'tpr' + '_' + str(col): tpr,
             'nmi' + '_' + str(col): nmi,
-            'evalmetric' + '_' + str(col): metric
+            'precision' + '_' + str(col): precision,
+            'recall' + '_' + str(col): recall,
+            'f1_score' + '_' + str(col): f1_score
         }
 
         results.update(col_results)
