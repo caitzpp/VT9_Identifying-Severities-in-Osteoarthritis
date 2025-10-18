@@ -7,7 +7,7 @@ import numpy as np
 import wandb
 from umap import UMAP
 from sklearn.cluster import HDBSCAN
-from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score
+from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score, mean_squared_error
 from scipy.stats import entropy, combine_pvalues
 import scikit_posthocs as sp
 
@@ -619,14 +619,21 @@ def external_validation_2(df, combined, val_column, cluster_col = 'cluster_label
     dfc = combined.merge(df_filtered, on='id', how = 'inner')
     lendfc = len(dfc)
 
-    conover, combine_pvalues = conover_test(dfc, val_column, cluster_col)
+    clusters = dfc[cluster_col].unique()
+    d = {}
+    for cluster in clusters:
+        mean_cluster_value = dfc[dfc[cluster_col] == cluster][val_column].mean()
+        #log
+        d[cluster] = mean_cluster_value
+
+    mse = mean_squared_error(dfc[val_column], dfc[cluster_col].map(d))
 
     if use_wandb:
         wandb.log({
             f"len_dfc": lendfc,
-            f"conover_comb_pvalue": combine_pvalues
+            f"mse": mse
         })
-    return lendfc, combine_pvalues, conover
+    return lendfc, mse
 
 
 

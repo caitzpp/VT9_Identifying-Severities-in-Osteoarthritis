@@ -1,36 +1,64 @@
 program: src/pipeline/hdbscan_clustering_tuning_sweep.py
-project: Pipeline_test
-name: test_pipeline3
-method: random
+project: PipeLineMSE
+name: test_pipeline
+method: bayes
 metric:
   goal: minimize
-  name: conover_comb_pvalue
+  name: mse
 parameters:
-  wUMAP:
-    values: [True]
-  replace_NanValues:
-    values: [False]
-  umap.n_neighbors:
-    values: [10, 20, 30, 50] #[20]
-  umap.min_dist:
-    values: [0.001, 0.01, 0.05, 0.1, 0.3, 0.5] #[0.5]
-  umap.random_state:
-    values: [42]
-  umap.metric:
-    values: ['cosine', 'manhattan'] #['euclidean']
-  umap.n_components:
-    values: [3]
-  hdbscan.min_cluster_size:
-    values: [5, 7, 10, 15, 20, 30] #[30]
-  hdbscan.min_samples:
-    values: [-1, 5, 7, 10, 15] #[5]
   hdbscan.cluster_selection_method:
-    values: ['eom', 'leaf'] #['eom']
-  hdbscan.alpha:
-    values: [1.0, 0.8, 0.5, 1.5] #[0.8]
-  hdbscan.metric:
-    values: ['euclidean', 'manhattan', 'cosine'] #['manhattan']
-  hdbscan.cluster_selection_epsilon:
-    values: [0.0]
+    values:
+      - leaf
+      - eom
+    distribution: categorical
+  hdbscan.min_cluster_size:
+    max: 40
+    min: 3
+    distribution: int_uniform
+  hdbscan.min_samples:
+    max: 30
+    min: -2
+    distribution: int_uniform
+  umap.random_state:
+    max: 84
+    min: 21
+    distribution: int_uniform
+  umap.n_components:
+    max: 6
+    min: 2
+    distribution: int_uniform
+  replace_NanValues:
+    values:
+      - "false"
+    distribution: categorical
   hdbscan.leaf_size:
-    values: [40, 20, 10, 5]
+    max: 80
+    min: 5
+    distribution: int_uniform
+  umap.n_neighbors:
+    max: 100
+    min: 5
+    distribution: int_uniform
+  hdbscan.metric:
+    values:
+      - cosine
+      - euclidean
+      - manhattan
+    distribution: categorical
+  umap.min_dist:
+    max: 0.6
+    min: 0.0005
+    distribution: uniform
+  hdbscan.alpha:
+    max: 3
+    min: 0.25
+    distribution: uniform
+  umap.metric:
+    values:
+      - cosine
+      - manhattan
+    distribution: categorical
+  wUMAP:
+    values:
+      - "true"
+    distribution: categorical
