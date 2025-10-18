@@ -490,6 +490,8 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='clus
         entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster.csv"))
         df_merged = df_filtered.merge(kl_df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
 
+        df_merged2 = results_df.merge(kl_df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
+        df_merged2.to_csv(os.path.join(save_dir_temp, f"{base_name}_allpoints_wKL.csv"), index=False)
         df_merged.to_csv(os.path.join(save_dir_temp, f"{base_name}_wKL.csv"), index=False)
         df_merged = df_merged.dropna(subset=[label])
         spr, auc, auc_mid, auc_mid2, auc_sev = get_metrics(df_merged, score = score, label = label)

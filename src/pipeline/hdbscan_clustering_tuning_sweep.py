@@ -29,11 +29,6 @@ STAGE = 'ss'
 MOD_PREFIX = "mod_smallimg"
 NEPOCH = 400
 
-pi = False
-koos = True
-oks = True
-gender = True
-
 n = 30
 min_n_clusters = 3
 sil_threshold = 0.5
@@ -113,8 +108,10 @@ if __name__ == "__main__":
         print("Dataframe after dropping NaN values: ", df2.shape)
 
     # 'gender' convert to int
-    df2['is_male'] = df['gender'].apply(lambda x: 1 if x=='male' else 0)
-    df2 = df2.drop(columns= 'gender')
+    gender = wandb_config.get("gender", True)
+    if gender:
+        df2['is_male'] = df['gender'].apply(lambda x: 1 if x=='male' else 0)
+        df2 = df2.drop(columns= 'gender')
     save_folder = run_folder_name
     filename = f"{run.name}_umap_hdbscan_scaled"
 
