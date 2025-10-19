@@ -12,30 +12,24 @@ parameters:
       - eom
     distribution: categorical
   hdbscan.min_cluster_size:
-    max: 40
+    max: 72
     min: 3
     distribution: int_uniform
   hdbscan.min_samples:
-    max: 30
-    min: -2
-    distribution: int_uniform
-  umap.random_state:
-    max: 84
-    min: 21
-    distribution: int_uniform
-  umap.n_components:
-    max: 6
+    max: 48
     min: 2
     distribution: int_uniform
+  umap.random_state:
+    values: [42]
+  umap.n_components:
+    values: [3]
   replace_NanValues:
     values: [false]
   hdbscan.leaf_size:
-    max: 80
-    min: 5
-    distribution: int_uniform
+    values: [40]
   umap.n_neighbors:
-    max: 100
-    min: 5
+    max: 156
+    min: 4
     distribution: int_uniform
   hdbscan.metric:
     values:
@@ -44,12 +38,12 @@ parameters:
       - manhattan
     distribution: categorical
   umap.min_dist:
-    max: 0.6
-    min: 0.0005
+    max: 0.949
+    min: 0.0148
     distribution: uniform
   hdbscan.alpha:
-    max: 3
-    min: 0.25
+    max: 4.813
+    min: 0.3937
     distribution: uniform
   umap.metric:
     values:
@@ -58,11 +52,23 @@ parameters:
     distribution: categorical
   wUMAP:
     values: [true]
-  pi:
-    values: [false]
   koos:
-    values: [true]
+    values:
+      - "true"
+      - "false"
+    distribution: categorical
   oks:
-    values: [true]
+    values:
+      - "true"
+      - "false"
+    distribution: categorical
+  pi:
+    values:
+      - "true"
+      - "false"
+    distribution: categorical
   gender:
-    values: [false]
+    values:
+      - "true"
+      - "false"
+    distribution: categorical

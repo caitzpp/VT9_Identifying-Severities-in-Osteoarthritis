@@ -26,7 +26,7 @@ random_state=42
 
 STAGE = 'ss'
 #MOD_PREFIX = "mod_2"
-MOD_PREFIX = "mod_smallimg"
+MOD_PREFIX = "mod_smallimg3"
 NEPOCH = 400
 
 n = 30
@@ -80,6 +80,7 @@ if __name__ == "__main__":
     flags = {"pi": wandb_config.get("pi", True), "koos": wandb_config.get("koos", True), 
              "oks": wandb_config.get("oks", True), "gender": wandb_config.get("gender", True)}
     cols = [col for key, active in flags.items() if active for col in feature_groups[key]]
+    cols += ['name', 'KL-Score']
 
     wUMAP = wandb_config.get('wUMAP', True)
     replace_NanValues = wandb_config.get('replace_NanValues', False)
@@ -128,11 +129,14 @@ if __name__ == "__main__":
     artifacts['clusterer'] = clusterer_path
 
     n_clusters = len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0)
-
-    ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
-    adj_chscore = ch_score / n_clusters if n_clusters > 1 else 0
-    sil_score = silhouette_score(X_umap, clusterer.labels_)
-    db_score = davies_bouldin_score(X_umap, clusterer.labels_)
+    if n_clusters>1:
+        ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
+        adj_chscore = ch_score / n_clusters if n_clusters > 1 else 0
+        sil_score = silhouette_score(X_umap, clusterer.labels_)
+        db_score = davies_bouldin_score(X_umap, clusterer.labels_)
+    else:
+        print("Stopping due to only one cluster found")
+        sys.exit(1)
 
     noise_count = np.sum(clusterer.labels_ == -1)
 

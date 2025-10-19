@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from sklearn import metrics
-from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_score, f1_score, recall_score, average_precision_score, normalized_mutual_info_score
+from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_score, f1_score, recall_score, average_precision_score, normalized_mutual_info_score, v_measure_score
 from scipy import stats
 import torch.nn.functional as F
 from scipy.ndimage.filters import uniform_filter1d
@@ -287,25 +287,34 @@ def get_metrics_external(df, externalcol, chadjusted, label = 'cluster_label'):
             for _, row in maj_vote.iterrows()
         ]
 
+        df = df.merge(maj_vote[[label, col_name]], on=label, how='left')
+
         col = externalcol[i] 
         
         y_true = df[col]
         y_pred = df[col_name]
 
         res = stats.spearmanr(df[label].tolist(), y_true.tolist())
-
         nmi = normalized_mutual_info_score(df[label], y_true)
-
+        vmeasure = v_measure_score(df[label], y_true)
         precision=precision_score(y_true, y_pred, average='macro')
         recall = recall_score(y_true, y_pred, average='macro')
         f1 = f1_score(y_true, y_pred, average='macro')
 
+        res_mv = stats.spearmanr(y_pred, y_true)
+        nmi_mv = normalized_mutual_info_score(y_pred, y_true)
+        vmeasure_mv = v_measure_score(y_pred, y_true)
+
         col_results = {
-            'spearman' + '_' + str(col): res[0],
-            'nmi' + '_' + str(col): nmi,
+            'spearman_clusterlabel' + '_' + str(col): res[0],
+            'nmi_clusterlabel' + '_' + str(col): nmi,
+            'vmeasure_clusterlabel' + '_' + str(col): vmeasure,
+            'spearman_MV' + '_' + str(col): res_mv[0],
+            'nmi_MV' + '_' + str(col): nmi_mv,
+            'vmeasure_MV' + '_' + str(col): vmeasure_mv,
             'precision' + '_' + str(col): precision,
             'recall' + '_' + str(col): recall,
-            'f1_score' + '_' + str(col): f1_score
+            'f1_score' + '_' + str(col): f1
         }
 
         results.update(col_results)
