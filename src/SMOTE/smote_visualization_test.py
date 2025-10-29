@@ -7,6 +7,7 @@ import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import sys
 
 PROCESSED_DATA_PATH = config.PROC_DATA_PATH
 RAW_DATA_PATH = config.RAW_DATA_PATH
@@ -66,8 +67,12 @@ if __name__ == "__main__":
 
     X_scaled = scaler.transform(X)
     # print(y)
+    #SMOTE, AHC (Agglomerative Hierarchical Clustering), DBSMOTE
+    # ['SMOTE', 'DBSMOTE', 'Borderline_SMOTE1', 'Borderline_SMOTE2']
 
-    oversampler= sv.MulticlassOversampling(oversampler='distance_SMOTE',
+    # optional: Borderline-SMOTE1 / 2 Borderline_SMOTE1
+    oversample_method = 'Borderline_SMOTE2'
+    oversampler= sv.MulticlassOversampling(oversampler=oversample_method,
                                         oversampler_params={'random_state': 5})
 
     # X_samp and y_samp contain the oversampled dataset
@@ -78,7 +83,7 @@ if __name__ == "__main__":
     df_samp = pd.DataFrame(X_gen, columns=scaler.feature_names_in_)
     df_samp['KL-Score'] = y_samp
 
-    df_samp.to_csv(os.path.join(PROCESSED_DATA_PATH, modelfolder,'pipeline', run, 'smote_oversampled_data.csv'), index=False)
+    df_samp.to_csv(os.path.join(PROCESSED_DATA_PATH, folder, f'smote_oversampled_data_{oversample_method}.csv'), index=False)
 
     X_umap_samp = model.transform(X_samp)
     X_umap_real = model.transform(X_scaled)
