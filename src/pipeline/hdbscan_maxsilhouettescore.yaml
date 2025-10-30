@@ -1,10 +1,10 @@
 program: src/pipeline/hdbscan_clustering_tuning_sweep.py
 project: Pipeline_UnsupervisedClustering
-name: MinimizeMSE
+name: MaxSilhScore
 method: bayes
 metric:
-  goal: minimize
-  name: mse
+  goal: maximize
+  name: silhouette_score
 parameters:
   hdbscan.cluster_selection_method:
     values:
@@ -16,7 +16,7 @@ parameters:
     min: 3
     distribution: int_uniform
   hdbscan.min_samples:
-    max: 62
+    max: 48
     min: 2
     distribution: int_uniform
   umap.random_state:
@@ -28,7 +28,7 @@ parameters:
   hdbscan.leaf_size:
     values: [40]
   umap.n_neighbors:
-    max: 248
+    max: 156
     min: 4
     distribution: int_uniform
   hdbscan.metric:
@@ -42,7 +42,7 @@ parameters:
     min: 0.0148
     distribution: uniform
   hdbscan.alpha:
-    max: 9.813
+    max: 4.813
     min: 0.3937
     distribution: uniform
   umap.metric:
@@ -61,4 +61,7 @@ parameters:
   gender:
     values: [true]
   smote:
-    values: [true]
+    values: 
+      - "true"
+      - "false"
+    distribution: categorical
