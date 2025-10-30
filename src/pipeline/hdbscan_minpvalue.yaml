@@ -12,12 +12,12 @@ parameters:
       - eom
     distribution: categorical
   hdbscan.min_cluster_size:
-    max: 72
-    min: 3
+    max: 100
+    min: 5
     distribution: int_uniform
   hdbscan.min_samples:
-    max: 62
-    min: 2
+    max: 50
+    min: 1
     distribution: int_uniform
   umap.random_state:
     values: [42]
@@ -25,8 +25,8 @@ parameters:
     values: [3]
   replace_NanValues:
     values: [false]
-  hdbscan.leaf_size:
-    values: [40]
+  # hdbscan.leaf_size:
+  #   values: [40]
   umap.n_neighbors:
     max: 248
     min: 4
@@ -37,10 +37,10 @@ parameters:
       - euclidean
       - manhattan
     distribution: categorical
-  umap.min_dist:
-    max: 0.949
-    min: 0.0148
-    distribution: uniform
+  # umap.min_dist:
+  #   max: 0.949
+  #   min: 0.0148
+  #   distribution: uniform
   hdbscan.alpha:
     max: 9.813
     min: 0.3937
@@ -50,6 +50,8 @@ parameters:
       - cosine
       - manhattan
     distribution: categorical
+  hdbscan.p:
+    values: [1, 2]
   wUMAP:
     values: [true]
   koos:
