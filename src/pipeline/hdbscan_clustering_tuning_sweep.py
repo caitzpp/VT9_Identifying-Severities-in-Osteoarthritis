@@ -11,7 +11,7 @@ from sklearn.cluster import HDBSCAN
 from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score, silhouette_score, davies_bouldin_score
 
 from utils.load_utils import fix_id, get_next_run_folder
-from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold, external_validation, get_hdbscan_umap_defaults, external_validation_2
+from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold, external_validation, get_hdbscan_umap_defaults, external_validation_2, smote_data_preparation, save_results_SMOTE
 
 import sys
 
@@ -42,6 +42,8 @@ os.makedirs(save_dir, exist_ok=True)
 
 folder = "2025-08-11_data_exploration"
 df_filename = "inmodi_data_questionnaire_kl_woSC.csv"
+
+smote_type = 'Borderline_SMOTE2'
 
 externaldf_path = os.path.join(base_dir, '2025-09-25_mrismall.csv')
 externalcols = ['mri_cart_yn', 'mri_osteo_yn']
@@ -84,6 +86,7 @@ if __name__ == "__main__":
 
     wUMAP = wandb_config.get('wUMAP', True)
     replace_NanValues = wandb_config.get('replace_NanValues', False)
+    smote = wandb_config.get('smote', False)
 
     umap_keys, umap_defaults, hdbscan_keys, hdbscan_defaults = get_hdbscan_umap_defaults()
     
@@ -121,19 +124,34 @@ if __name__ == "__main__":
 
     scaler = StandardScaler()
     
-    X_umap, y, df2_scaled, artifacts = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', save_path=save_dir_temp)
+    if smote:
+        X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts = smote_data_preparation(df=df2, scaler=scaler, 
+                               umap_params=umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', 
+                               oversample_method=smote_type, save_path=save_dir_temp)
+        clusterer = HDBSCAN(**hdbscan_params).fit(X_samp_umap)
+        
+    else:
+        X_umap, y, df2_scaled, artifacts = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', save_path=save_dir_temp)
+        clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
+   
+    y_pred = clusterer.predict(X_umap)
 
-    clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
     clusterer_path = os.path.join(save_dir_temp, f"{filename}_clusterer.pkl")
     joblib.dump(clusterer, clusterer_path)
     artifacts['clusterer'] = clusterer_path
 
     n_clusters = len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0)
     if n_clusters>1:
-        ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
+        # if smote:
+        ch_score = calinski_harabasz_score(X_umap, y_pred)
         adj_chscore = ch_score / n_clusters if n_clusters > 1 else 0
-        sil_score = silhouette_score(X_umap, clusterer.labels_)
-        db_score = davies_bouldin_score(X_umap, clusterer.labels_)
+        sil_score = silhouette_score(X_umap, y_pred)
+        db_score = davies_bouldin_score(X_umap, y_pred)
+        # else:
+        #     ch_score = calinski_harabasz_score(X_umap, clusterer.labels_)
+        #     adj_chscore = ch_score / n_clusters if n_clusters > 1 else 0
+        #     sil_score = silhouette_score(X_umap, clusterer.labels_)
+        #     db_score = davies_bouldin_score(X_umap, clusterer.labels_)
     else:
         print("Stopping due to only one cluster found")
         sys.exit(1)
@@ -156,12 +174,15 @@ if __name__ == "__main__":
 
     
     if cont_pipeline:
-        base_name, results_df = save_results(df=df2_scaled, clusterer=clusterer, params={
+        base_name, results_df = save_results(df=df2_scaled, ypred = y_pred, clusterer=clusterer, params={
             'umap': umap_params,
             'hdbscan': hdbscan_params
-        }, scaler=scaler, save_dir=save_dir_temp, artifacts=artifacts, filename=filename, id='name', use_wandb=True)
+        }, scaler=scaler, save_dir=save_dir_temp, artifacts=artifacts, filename=filename, id='name', use_wandb=True,
+        smote=smote)
 
-        get_metrics_hdbscan(results_df, df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True)
+        get_metrics_hdbscan(results_df = results_df, kl_df = df, save_dir_temp = save_dir_temp, base_name = base_name, 
+                            clusterer = clusterer, score = 'cluster_label', label = 'KL-Score', 
+                            use_wandb = True, smote = smote)
         
         results = external_validation(results_df, externaldf, chadjustd= adj_chscore, label = 'cluster_label', external_cols = externalcols, leftid_col = 'id', rightid_col='id', use_wandb=True)
 
@@ -172,9 +193,15 @@ if __name__ == "__main__":
         _ = external_validation_2(results_df, combined, val_column = 'mean', cluster_col = 'cluster_label', use_wandb=True)
 
         # Plot the results
-        plot_hdbscan(X_umap, clusterer.labels_,
-                    probabilities=clusterer.probabilities_,
-                    save_path=os.path.join(save_dir_temp, f"{base_name}_plot.png"))
+        if smote:
+            plot_hdbscan(X_umap, y_pred,
+                    save_path=os.path.join(save_dir_temp, f"{base_name}_plot_originaldata.png"))
+            plot_hdbscan(X_samp_umap, clusterer.labels_, clusterer.probabilities_,
+                    save_path=os.path.join(save_dir_temp, f"{base_name}_plot_smoteddata.png"))
+        else:
+            plot_hdbscan(X_umap, clusterer.labels_,
+                        probabilities=clusterer.probabilities_,
+                        save_path=os.path.join(save_dir_temp, f"{base_name}_plot.png"))
         wandb.log(
                 {'calinski_harabasz_score': np.round(ch_score, 3),
                 'calinski_harabasz_score_adjusted': np.round(adj_chscore, 3),

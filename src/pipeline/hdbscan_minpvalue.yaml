@@ -72,3 +72,5 @@ parameters:
       - "true"
       - "false"
     distribution: categorical
+  smote:
+    values: [true]

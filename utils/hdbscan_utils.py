@@ -2,6 +2,7 @@ import os
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
+import smote_variants as sv
 import joblib
 import numpy as np
 import wandb
@@ -28,7 +29,19 @@ def get_unique_filepath(base_path):
         new_path = f"{base}_{counter}{ext}"
     return new_path
 
-def save_results(df, clusterer, params, scaler, save_dir, filename, id = 'id',artifacts = None, comment = None, use_wandb= False, fold = None):
+def save_results(df, 
+                 ypred, 
+                 clusterer, 
+                 params, 
+                 scaler, 
+                 save_dir, 
+                 filename, 
+                 id = 'id',
+                 artifacts = None, 
+                 comment = None, 
+                 use_wandb= False, 
+                 fold = None, 
+                 smote=False):
     if fold is not None:
         df_filename = f"{filename}_fold{fold}.csv"
         results_df = pd.DataFrame({
@@ -64,11 +77,17 @@ def save_results(df, clusterer, params, scaler, save_dir, filename, id = 'id',ar
         return os.path.basename(df_savepath).split('.')[0], results_df
     elif fold is None:
         df_filename = f"{filename}.csv"
-        results_df = pd.DataFrame({
+        if smote:
+            results_df = pd.DataFrame({
                         'id': df[id],
-                        'cluster_label': clusterer.labels_,
-                        'probability': clusterer.probabilities_,
+                        'cluster_label': ypred,
                     })
+        else:
+            results_df = pd.DataFrame({
+                            'id': df[id],
+                            'cluster_label': clusterer.labels_,
+                            'probability': clusterer.probabilities_,
+                        })
         df_savepath = get_unique_filepath(os.path.join(save_dir, df_filename))
         results_df.to_csv(df_savepath, index=False)
 
@@ -96,6 +115,41 @@ def save_results(df, clusterer, params, scaler, save_dir, filename, id = 'id',ar
         with open(model_info_savepath, 'w') as f:
             json.dump(model_info, f, indent=4)
         return os.path.basename(df_savepath).split('.')[0], results_df
+    
+def save_results_SMOTE(df,ypred, clusterer, params, scaler, save_dir, filename, artifacts = None,  id = 'name', comment=None,use_wandb=False):
+    df_filename = f"{filename}.csv"
+
+    results_df = pd.DataFrame({
+                        'id': df[id],
+                        'cluster_label': ypred
+                    })
+    df_savepath = get_unique_filepath(os.path.join(save_dir, df_filename))
+    results_df.to_csv(df_savepath, index=False)
+
+    model_info = {
+                'df_savepath': df_savepath,
+                'params': params,
+                'scaler': scaler.__class__.__name__,
+                'n_clusters': len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0),
+                'centroids': clusterer.centroids_.tolist(),
+                'files': artifacts,
+                'comment': comment,
+            }
+    
+    if use_wandb:
+        wandb.log({
+            # 'df_savepath': df_savepath,
+            # 'params': params, #TODO log params one by one not within the wandb log
+            'n_clusters': model_info['n_clusters'],
+            #'centroids': model_info['centroids'],
+            # 'comment': comment
+        })
+
+    model_info_filename = f"{filename}_model_info.json"
+    model_info_savepath = get_unique_filepath(os.path.join(save_dir, model_info_filename))
+    with open(model_info_savepath, 'w') as f:
+        json.dump(model_info, f, indent=4)
+    return os.path.basename(df_savepath).split('.')[0], results_df
 
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (needed for 3D)
 
@@ -407,6 +461,60 @@ def prep_data(df, scaler, Xcol = None, umap_params = None, wUMAP = True, id_col=
             artifacts['embeddings'] = embeddings_path
         return X_umap, y, df_scaled, artifacts
 
+def smote_data_preparation(df, scaler, umap_params, wUMAP, id_col = 'name', y_value='KL-Score', oversample_method='SMOTE', save_path=None):
+    df_scaled = df.copy()
+    y = df_scaled[y_value]
+    ids = df_scaled[id_col]
+
+    X = df_scaled.drop(columns=[id_col, y_value])
+
+    X_scaled = scaler.fit_transform(X)
+
+    oversampler = sv.MulticlassOversampling(method=oversample_method,oversampler_params={'random_state': 5})
+    X_samp, y_samp = oversampler.sample(X_scaled, y)
+    
+    X_gen = scaler.inverse_transform(X_samp)
+    df_gen = pd.DataFrame(X_gen, columns=X.columns)
+    df_gen['KL-Score'] = y_samp
+
+    #to_csv(os.path.join(PROCESSED_DATA_PATH, folder, f'smote_oversampled_data_{oversample_method}.csv'), index=False)
+
+
+    if wUMAP:
+        reducer = UMAP(**umap_params)
+        X_samp_umap = reducer.fit_transform(X_samp)
+        X_umap = reducer.transform(X_scaled)
+        emb_name = "X_umap"
+        if save_path is not None:
+            artifacts = {}
+            umap_path = os.path.join(save_path, "umap_model.pkl")
+            joblib.dump(reducer, umap_path)
+            artifacts["umap_model"] = umap_path
+            artifacts["ids"] = list(ids)
+
+    else:
+        X_umap = X_scaled
+        X_samp_umap = X_samp
+        emb_name = "X_scaled"
+    
+    if save_path is not None:
+            #emb_cols = [f"umap{i+1}" for i in range(X_umap.shape[1])]
+
+            #save scaler
+            scaler_path = os.path.join(save_path, "scaler.pkl")
+            joblib.dump(scaler, scaler_path)
+            artifacts['scaler'] = scaler_path
+
+            #save embeddings
+            embeddings_path = os.path.join(save_path, f"{emb_name}_embeddings.npy")
+            embeddings_samp_path = os.path.join(save_path, f"{emb_name}_samp_embeddings.npy")
+            np.save(embeddings_path, X_umap)
+            np.save(embeddings_samp_path, X_samp_umap)
+            artifacts['embeddings'] = embeddings_path
+            artifacts['embeddings_samp'] = embeddings_samp_path
+    
+    return X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts
+
 def train_fold(fold, train_idx, test_idx, X, y, df, hdbscan_params, umap_params, scaler,filename, save_dir_temp):
     X_train, X_test = X[train_idx], X[test_idx]
     df_train, df_test = df.iloc[train_idx], df.iloc[test_idx]
@@ -428,7 +536,8 @@ def train_fold(fold, train_idx, test_idx, X, y, df, hdbscan_params, umap_params,
 
     return base_name, results_df, clusterer, X_train, df_train, X_test, df_test, ch_score
 
-def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='cluster_label', label='KL-Score', use_wandb=True, fold = None):
+def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, clusterer, score='cluster_label', label='KL-Score', 
+                        use_wandb=True, fold = None, smote=False):
     if fold is not None:
         results_df['id'] = results_df['id'].apply(fix_id)
 
@@ -477,17 +586,37 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, score='clus
         noise_count = (results_df[score]==-1).sum()
 
         df_filtered = results_df[results_df[score] != -1].copy()
-        avg_probs = df_filtered.groupby(score)['probability'].mean().sort_values(ascending=False)
-        avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
+
+        if smote:
+            results_df_samp = pd.DataFrame({
+                'cluster_label': clusterer.labels_,
+                'probability': clusterer.probabilities_,
+            })
+
+            df_filtered_samp = results_df_samp[results_df_samp[score] != -1].copy()
+            avg_probs = df_filtered_samp.groupby(score)['probability'].mean().sort_values(ascending=False)
+            avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster_samp.csv"))
+
+            p_dist = df_filtered_samp['probability'] / np.sum(df_filtered_samp['probability'])
+            membership_entropy = entropy(p_dist, base=2)
+            H_max = np.log2(len(p_dist))
+            entropy_per_cluster = df_filtered_samp.groupby(score)['probability'].apply(
+                            normalized_entropy
+                        ).sort_values()
+            entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster_samp.csv"))
+        if smote==False:
+            avg_probs = df_filtered.groupby(score)['probability'].mean().sort_values(ascending=False)
+            avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
                 
-        p_dist = df_filtered['probability'] / np.sum(df_filtered['probability'])
-        membership_entropy = entropy(p_dist, base=2)
-        H_max = np.log2(len(p_dist))
+            p_dist = df_filtered['probability'] / np.sum(df_filtered['probability'])
+            membership_entropy = entropy(p_dist, base=2)
+            H_max = np.log2(len(p_dist))
                 
-        entropy_per_cluster = df_filtered.groupby(score)['probability'].apply(
-                        normalized_entropy
-                    ).sort_values()
-        entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster.csv"))
+            entropy_per_cluster = df_filtered.groupby(score)['probability'].apply(
+                            normalized_entropy
+                        ).sort_values()
+            entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster.csv"))
+        
         df_merged = df_filtered.merge(kl_df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
 
         df_merged2 = results_df.merge(kl_df, left_on = 'id', right_on='name', how='left', validate='one_to_one')
