@@ -517,6 +517,69 @@ def smote_data_preparation(df, scaler, umap_params, wUMAP, id_col = 'name', y_va
     
     return X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts
 
+def smote_data_preparation2(
+    df,
+    scaler,
+    umap_params,
+    wUMAP=True,
+    id_col="name",
+    y_value="KL-Score",
+    oversample_method="SMOTE",
+    save_path=None,
+    smote_csv_path=None,        # <-- NEW: if you want to load existing SMOTE results
+):
+    df_scaled = df.copy()
+    y = df_scaled[y_value]
+    ids = df_scaled[id_col]
+
+    X = df_scaled.drop(columns=[id_col, y_value])
+    X_scaled = scaler.fit_transform(X)
+
+    # If you want to load an existing SMOTE CSV instead:
+    if smote_csv_path:
+        df_gen = pd.read_csv(smote_csv_path)
+        X_samp = scaler.transform(df_gen.drop(columns=[y_value]))
+        y_samp = df_gen[y_value]
+    else:
+        oversampler = sv.MulticlassOversampling(
+            oversampler=oversample_method,
+            oversampler_params={'random_state': 5}
+        )
+        X_samp, y_samp = oversampler.sample(X_scaled, y)
+        X_gen = scaler.inverse_transform(X_samp)
+        df_gen = pd.DataFrame(X_gen, columns=X.columns)
+        df_gen[y_value] = y_samp
+
+    artifacts = {}
+
+  
+    if wUMAP:
+        reducer = UMAP(**umap_params)
+        X_samp_umap = reducer.fit_transform(X_samp)
+        X_umap = reducer.transform(X_scaled)
+
+        if save_path:
+            umap_path = os.path.join(save_path, "umap_model.pkl")
+            joblib.dump(reducer, umap_path)
+            artifacts["umap_model"] = umap_path
+            artifacts["ids"] = list(ids)
+    else:
+        X_umap = X_scaled
+        X_samp_umap = X_samp
+
+    
+    if save_path:
+        joblib.dump(scaler, os.path.join(save_path, "scaler.pkl"))
+
+        np.save(os.path.join(save_path, "X_umap_embeddings.npy"), X_umap)
+        np.save(os.path.join(save_path, "X_samp_umap_embeddings.npy"), X_samp_umap)
+
+        artifacts["embeddings"] = os.path.join(save_path, "X_umap_embeddings.npy")
+        artifacts["embeddings_samp"] = os.path.join(save_path, "X_samp_umap_embeddings.npy")
+
+    return X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts
+
+
 def train_fold(fold, train_idx, test_idx, X, y, df, hdbscan_params, umap_params, scaler,filename, save_dir_temp):
     X_train, X_test = X[train_idx], X[test_idx]
     df_train, df_test = df.iloc[train_idx], df.iloc[test_idx]
@@ -817,3 +880,49 @@ def get_hdbscan_umap_defaults():
     }
 
     return umap_keys, umap_defaults, hdbscan_keys, hdbscan_defaults
+
+
+def plot_umap(embeddings, labels, title, save_path):
+    plt.figure(figsize=(8, 6))
+
+    scatter = plt.scatter(
+        embeddings[:, 0],
+        embeddings[:, 1],
+        c=labels,
+        s=10,
+        alpha=0.8
+    )
+
+    plt.colorbar(scatter, label="KL-Score")
+    plt.title(title)
+    plt.xlabel("UMAP-1")
+    plt.ylabel("UMAP-2")
+    plt.tight_layout()
+
+    plt.savefig(save_path, dpi=300)
+    plt.close()
+
+def plot_umap_3d(embeddings, labels, title, save_path):
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    scatter = ax.scatter(
+        embeddings[:, 0],
+        embeddings[:, 1],
+        embeddings[:, 2],
+        c=labels,
+        s=10,
+        alpha=0.8
+    )
+
+    cb = fig.colorbar(scatter, ax=ax, pad=0.1)
+    cb.set_label("KL-Score")
+
+    ax.set_title(title)
+    ax.set_xlabel("UMAP-1")
+    ax.set_ylabel("UMAP-2")
+    ax.set_zlabel("UMAP-3")
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300)
+    plt.close()
