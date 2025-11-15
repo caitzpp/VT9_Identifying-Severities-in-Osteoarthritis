@@ -31,6 +31,7 @@ def get_unique_filepath(base_path):
 
 def save_results(df, 
                  ypred, 
+                 strengths,
                  clusterer, 
                  params, 
                  scaler, 
@@ -57,7 +58,7 @@ def save_results(df,
                 'params': params,
                 'scaler': scaler.__class__.__name__,
                 'n_clusters': len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0),
-                'centroids': clusterer.centroids_.tolist(),
+                # 'centroids': clusterer.centroids_.tolist(),
                 'files': artifacts,
                 'comment': comment,
             }
@@ -81,6 +82,7 @@ def save_results(df,
             results_df = pd.DataFrame({
                         'id': df[id],
                         'cluster_label': ypred,
+                        'probability': strengths
                     })
         else:
             results_df = pd.DataFrame({
@@ -96,7 +98,7 @@ def save_results(df,
                 'params': params,
                 'scaler': scaler.__class__.__name__,
                 'n_clusters': len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0),
-                'centroids': clusterer.centroids_.tolist(),
+                # 'centroids': clusterer.centroids_.tolist(),
                 'files': artifacts,
                 'comment': comment,
             }
@@ -131,7 +133,7 @@ def save_results_SMOTE(df,ypred, clusterer, params, scaler, save_dir, filename, 
                 'params': params,
                 'scaler': scaler.__class__.__name__,
                 'n_clusters': len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0),
-                'centroids': clusterer.centroids_.tolist(),
+                # 'centroids': clusterer.centroids_.tolist(),
                 'files': artifacts,
                 'comment': comment,
             }
@@ -470,7 +472,7 @@ def smote_data_preparation(df, scaler, umap_params, wUMAP, id_col = 'name', y_va
 
     X_scaled = scaler.fit_transform(X)
 
-    oversampler = sv.MulticlassOversampling(method=oversample_method,oversampler_params={'random_state': 5})
+    oversampler = sv.MulticlassOversampling(oversampler=oversample_method,oversampler_params={'random_state': 5})
     X_samp, y_samp = oversampler.sample(X_scaled, y)
     
     X_gen = scaler.inverse_transform(X_samp)
@@ -595,7 +597,7 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, clusterer, 
 
             df_filtered_samp = results_df_samp[results_df_samp[score] != -1].copy()
             avg_probs = df_filtered_samp.groupby(score)['probability'].mean().sort_values(ascending=False)
-            avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster_samp.csv"))
+            avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster_orgsmote.csv"))
 
             p_dist = df_filtered_samp['probability'] / np.sum(df_filtered_samp['probability'])
             membership_entropy = entropy(p_dist, base=2)
@@ -603,7 +605,7 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, clusterer, 
             entropy_per_cluster = df_filtered_samp.groupby(score)['probability'].apply(
                             normalized_entropy
                         ).sort_values()
-            entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster_samp.csv"))
+            entropy_per_cluster.to_csv(os.path.join(save_dir_temp, f"{base_name}_entropy_per_cluster_orgsmote.csv"))
         if smote==False:
             avg_probs = df_filtered.groupby(score)['probability'].mean().sort_values(ascending=False)
             avg_probs.to_csv(os.path.join(save_dir_temp, f"{base_name}_avg_probs_per_cluster.csv"))
@@ -771,10 +773,22 @@ def external_validation_2(df, combined, val_column, cluster_col = 'cluster_label
 
 def get_hdbscan_umap_defaults():
     umap_keys = ['n_neighbors', 'min_dist', 'n_components', 'metric']
-    hdbscan_keys = ['min_cluster_size', 'min_samples', 'cluster_selection_method', 
-                    'metric', 'metric_params', 'max_cluster_size',
-                    'cluster_selection_epsilon', 'algorithm', 'leaf_size',
-                    'store_centers', 'alpha']
+    # hdbscan_keys = ['min_cluster_size', 'min_samples', 'cluster_selection_method', 
+    #                 'metric', 'metric_params', 'max_cluster_size',
+    #                 'cluster_selection_epsilon', 'algorithm', 'leaf_size',
+    #                 'store_centers', 'alpha']
+    hdbscan_keys = [
+            'min_cluster_size',
+            'min_samples',
+            'metric',
+            'p',
+            'alpha',
+           # 'cluster_selection_epsilon',
+            'algorithm',
+            #'approx_min_span_tree',
+            'cluster_selection_method',
+            'prediction_data'
+        ]
 
     umap_defaults = {
         'n_neighbors': 15,
@@ -785,18 +799,21 @@ def get_hdbscan_umap_defaults():
     }
 
     hdbscan_defaults = {
-        'min_cluster_size': 10,
+        'min_cluster_size': 5,
         'min_samples': None,
-        'cluster_selection_method': 'eom',
         'metric': 'euclidean',
-        'metric_params': None,
-        'max_cluster_size': None,
-        'cluster_selection_epsilon': 0.0,
-        'algorithm': 'auto',
-        'leaf_size': 40,
-        'store_centers': 'centroid',
+        'p': None,
         'alpha': 1.0,
-        'approx_min_span_tree': False,
+        'cluster_selection_epsilon': 0.0,
+        'algorithm': 'best',
+        'leaf_size': 40,
+        'approx_min_span_tree': True,
+        'gen_min_span_tree': False,
+        'core_dist_n_jobs': 4,
+        'cluster_selection_method': 'eom',
+        'allow_single_cluster': False,
+        'prediction_data': True,
+        'match_reference_implementation': False
     }
 
     return umap_keys, umap_defaults, hdbscan_keys, hdbscan_defaults

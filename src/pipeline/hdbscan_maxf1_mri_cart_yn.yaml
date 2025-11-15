@@ -3,8 +3,8 @@ project: Pipeline_UnsupervisedClustering_v2
 name: MinimizeMSE
 method: bayes
 metric:
-  goal: minimize
-  name: mse
+  goal: maximize
+  name: f1_score_mri_cart_yn
 parameters:
   hdbscan.cluster_selection_method:
     values:

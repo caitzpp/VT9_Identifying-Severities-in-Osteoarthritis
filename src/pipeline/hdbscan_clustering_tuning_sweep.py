@@ -7,7 +7,9 @@ import numpy as np
 import joblib
 import datetime
 from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import HDBSCAN
+#from sklearn.cluster import HDBSCAN
+from hdbscan import HDBSCAN
+import hdbscan
 from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score, silhouette_score, davies_bouldin_score
 
 from utils.load_utils import fix_id, get_next_run_folder
@@ -29,9 +31,9 @@ STAGE = 'ss'
 MOD_PREFIX = "mod_smallimg3"
 NEPOCH = 400
 
-n = 30
+n = 90
 min_n_clusters = 3
-sil_threshold = 0.5
+sil_threshold = 0.3
 
 if folder is not None:
     save_dir = os.path.join(proc_dir, folder)
@@ -131,10 +133,10 @@ if __name__ == "__main__":
         clusterer = HDBSCAN(**hdbscan_params).fit(X_samp_umap)
         
     else:
-        X_umap, y, df2_scaled, artifacts = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', save_path=save_dir_temp)
+        X_umap, y, df_scaled, artifacts = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', save_path=save_dir_temp)
         clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
    
-    y_pred = clusterer.predict(X_umap)
+    y_pred, strengths = hdbscan.approximate_predict(clusterer, X_umap)
 
     clusterer_path = os.path.join(save_dir_temp, f"{filename}_clusterer.pkl")
     joblib.dump(clusterer, clusterer_path)
@@ -174,7 +176,7 @@ if __name__ == "__main__":
 
     
     if cont_pipeline:
-        base_name, results_df = save_results(df=df2_scaled, ypred = y_pred, clusterer=clusterer, params={
+        base_name, results_df = save_results(df=df_scaled, ypred = y_pred, strengths = strengths,  clusterer=clusterer, params={
             'umap': umap_params,
             'hdbscan': hdbscan_params
         }, scaler=scaler, save_dir=save_dir_temp, artifacts=artifacts, filename=filename, id='name', use_wandb=True,
