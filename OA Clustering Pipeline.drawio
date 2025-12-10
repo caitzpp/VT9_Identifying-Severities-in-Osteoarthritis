@@ -75,7 +75,7 @@
           <mxGeometry height="60" width="120" x="100" y="600" as="geometry" />
         </mxCell>
         <mxCell id="oyYg5qqAVHLQTahQpdof-41" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Calculate Healthy Centroid &amp;amp; Euclidean Distance" vertex="1">
-          <mxGeometry height="30" width="230" x="50" y="540" as="geometry" />
+          <mxGeometry height="30" width="230" x="130" y="540" as="geometry" />
         </mxCell>
         <mxCell id="oyYg5qqAVHLQTahQpdof-55" edge="1" parent="1" source="oyYg5qqAVHLQTahQpdof-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="oyYg5qqAVHLQTahQpdof-44">
           <mxGeometry relative="1" as="geometry" />
