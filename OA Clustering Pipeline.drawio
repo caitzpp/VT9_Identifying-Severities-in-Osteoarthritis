@@ -108,7 +108,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="oyYg5qqAVHLQTahQpdof-63" parent="1" style="swimlane;startSize=0;labelBackgroundColor=default;" value="Evaluation" vertex="1">
-          <mxGeometry height="390" width="700" x="20" y="450" as="geometry" />
+          <mxGeometry height="390" width="690" x="40" y="450" as="geometry" />
         </mxCell>
         <mxCell id="oyYg5qqAVHLQTahQpdof-54" parent="oyYg5qqAVHLQTahQpdof-63" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#8A1C1C;strokeColor=none;fontColor=#FFFFFF;" value="Embeddings" vertex="1">
           <mxGeometry height="60" width="120" x="170" y="20" as="geometry" />
@@ -122,16 +122,16 @@
         <mxCell id="oyYg5qqAVHLQTahQpdof-40" parent="oyYg5qqAVHLQTahQpdof-63" style="rounded=1;whiteSpace=wrap;html=1;fontColor=#FFFFFF;fillColor=#8A1C1C;strokeColor=none;" value="Cluster Order" vertex="1">
           <mxGeometry height="60" width="120" x="170" y="190" as="geometry" />
         </mxCell>
-        <mxCell id="oyYg5qqAVHLQTahQpdof-45" parent="oyYg5qqAVHLQTahQpdof-63" style="rhombus;whiteSpace=wrap;html=1;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" value="Benchmarks" vertex="1">
+        <mxCell id="oyYg5qqAVHLQTahQpdof-45" parent="oyYg5qqAVHLQTahQpdof-63" style="rhombus;whiteSpace=wrap;html=1;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;fillColor=#6B705C;strokeColor=none;fontColor=#FFFFFF;" value="Benchmarks" vertex="1">
           <mxGeometry height="120" width="120" x="170" y="260" as="geometry" />
         </mxCell>
-        <mxCell id="oyYg5qqAVHLQTahQpdof-31" parent="oyYg5qqAVHLQTahQpdof-63" style="rhombus;whiteSpace=wrap;html=1;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" value="Internal Validation" vertex="1">
+        <mxCell id="oyYg5qqAVHLQTahQpdof-31" parent="oyYg5qqAVHLQTahQpdof-63" style="rhombus;whiteSpace=wrap;html=1;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;fillColor=#6B705C;strokeColor=none;fontColor=#FFFFFF;" value="Internal Validation" vertex="1">
           <mxGeometry height="120" width="120" x="350" y="260" as="geometry" />
         </mxCell>
         <mxCell id="oyYg5qqAVHLQTahQpdof-62" edge="1" parent="oyYg5qqAVHLQTahQpdof-63" source="oyYg5qqAVHLQTahQpdof-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="oyYg5qqAVHLQTahQpdof-31">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="oyYg5qqAVHLQTahQpdof-44" parent="oyYg5qqAVHLQTahQpdof-63" style="rhombus;whiteSpace=wrap;html=1;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" value="External Validation" vertex="1">
+        <mxCell id="oyYg5qqAVHLQTahQpdof-44" parent="oyYg5qqAVHLQTahQpdof-63" style="rhombus;whiteSpace=wrap;html=1;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;fillColor=#6B705C;strokeColor=none;fontColor=#FFFFFF;" value="External Validation" vertex="1">
           <mxGeometry height="120" width="120" x="550" y="260" as="geometry" />
         </mxCell>
         <mxCell id="oyYg5qqAVHLQTahQpdof-55" edge="1" parent="oyYg5qqAVHLQTahQpdof-63" source="oyYg5qqAVHLQTahQpdof-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="oyYg5qqAVHLQTahQpdof-44">
