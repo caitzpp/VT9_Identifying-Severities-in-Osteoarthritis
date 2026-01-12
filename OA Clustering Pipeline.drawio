@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.6">
   <diagram name="Page-1" id="ZY1DY1mG-LVTWWWelV7s">
-    <mxGraphModel dx="2066" dy="1849" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="784" dy="1848" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -56,7 +56,7 @@
         <mxCell id="oyYg5qqAVHLQTahQpdof-66" edge="1" parent="oyYg5qqAVHLQTahQpdof-23" source="oyYg5qqAVHLQTahQpdof-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;strokeColor=#4D4D4D;strokeWidth=2;" target="oyYg5qqAVHLQTahQpdof-53">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="oyYg5qqAVHLQTahQpdof-12" parent="1" style="swimlane;startSize=0;labelBackgroundColor=default;strokeColor=#4D4D4D;rounded=1;strokeWidth=2;shadow=1;fontColor=#708090;" value="Unsupervised Cluster Generation (UCG)" vertex="1">
+        <mxCell id="oyYg5qqAVHLQTahQpdof-12" parent="1" style="swimlane;startSize=0;labelBackgroundColor=default;strokeColor=#4D4D4D;rounded=1;strokeWidth=2;shadow=1;fontColor=#708090;" value="Unsupervised Clustering" vertex="1">
           <mxGeometry height="140" width="500" x="40" y="-631" as="geometry" />
         </mxCell>
         <mxCell id="oyYg5qqAVHLQTahQpdof-10" parent="oyYg5qqAVHLQTahQpdof-12" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="SMOTE" vertex="1">
@@ -92,7 +92,7 @@
         <mxCell id="oyYg5qqAVHLQTahQpdof-72" edge="1" parent="oyYg5qqAVHLQTahQpdof-52" source="oyYg5qqAVHLQTahQpdof-38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#4D4D4D;strokeWidth=2;" target="oyYg5qqAVHLQTahQpdof-43">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="oyYg5qqAVHLQTahQpdof-38" parent="oyYg5qqAVHLQTahQpdof-52" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#708090, #6db2ff);fontColor=#ffffff;strokeColor=none;" value="SS-FewSOME" vertex="1">
+        <mxCell id="oyYg5qqAVHLQTahQpdof-38" parent="oyYg5qqAVHLQTahQpdof-52" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#708090, #6db2ff);fontColor=#ffffff;strokeColor=none;" value="Siamese CNN" vertex="1">
           <mxGeometry height="60" width="120" x="40" y="231" as="geometry" />
         </mxCell>
         <mxCell id="oyYg5qqAVHLQTahQpdof-43" parent="oyYg5qqAVHLQTahQpdof-52" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#8A1C1C;strokeColor=none;fontColor=#FFFFFF;" value="Anomaly Score" vertex="1">
@@ -139,7 +139,7 @@
         <mxCell id="oyYg5qqAVHLQTahQpdof-75" edge="1" parent="1" source="oyYg5qqAVHLQTahQpdof-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#4D4D4D;strokeWidth=2;" target="oyYg5qqAVHLQTahQpdof-45">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="2Pz4PrXX7DOMd0bolkXG-2" parent="1" style="swimlane;startSize=0;strokeWidth=2;strokeColor=#4D4D4D;labelBackgroundColor=default;fontColor=#708090;" value="Cluster Ordering" vertex="1">
+        <mxCell id="2Pz4PrXX7DOMd0bolkXG-2" parent="1" style="swimlane;startSize=0;strokeWidth=2;strokeColor=#4D4D4D;labelBackgroundColor=default;fontColor=#708090;" value="Severity-based Cluster Ordering" vertex="1">
           <mxGeometry height="300" width="200" x="40" y="-460" as="geometry" />
         </mxCell>
         <mxCell id="oyYg5qqAVHLQTahQpdof-54" parent="2Pz4PrXX7DOMd0bolkXG-2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#8A1C1C;strokeColor=none;fontColor=#FFFFFF;" value="Embeddings" vertex="1">
