@@ -1,9 +1,33 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.3.0">
   <diagram name="Page-1" id="G6rPU1nT3C5CxCFR8Oyy">
-    <mxGraphModel>
+    <mxGraphModel dx="512" dy="1082" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="RA3LZ_0YBMtdE78k1QB4-1" parent="1" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" value="PROMs" vertex="1">
+          <mxGeometry height="60" width="120" x="2" y="-116" as="geometry" />
+        </mxCell>
+        <mxCell id="RA3LZ_0YBMtdE78k1QB4-2" parent="1" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" value="KL-Scores" vertex="1">
+          <mxGeometry height="60" width="120" x="292" y="-116" as="geometry" />
+        </mxCell>
+        <mxCell id="RA3LZ_0YBMtdE78k1QB4-3" parent="1" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" value="Patient Information" vertex="1">
+          <mxGeometry height="60" width="120" x="147" y="-116" as="geometry" />
+        </mxCell>
+        <mxCell id="RA3LZ_0YBMtdE78k1QB4-4" edge="1" parent="1" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4D4D4D;strokeWidth=2;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="66" y="-48" as="sourcePoint" />
+            <mxPoint x="66" y="-26" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RA3LZ_0YBMtdE78k1QB4-5" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="Q-Data" vertex="1">
+          <mxGeometry height="70" width="60" x="177" y="89" as="geometry" />
+        </mxCell>
+        <mxCell id="RA3LZ_0YBMtdE78k1QB4-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#708090, #6db2ff);fontColor=#ffffff;strokeColor=#001DBC;" value="cleaning" vertex="1">
+          <mxGeometry height="31" width="124" y="-4" as="geometry" />
+        </mxCell>
+        <mxCell id="RA3LZ_0YBMtdE78k1QB4-9" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="80" width="80" x="167" y="203" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
