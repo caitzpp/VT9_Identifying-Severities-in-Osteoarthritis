@@ -76,7 +76,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="4zTWnIK_Cy7xwKGMVRzB" name="UnsupervisedExperiments">
-    <mxGraphModel dx="2066" dy="1201" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2066" dy="1149" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -84,10 +84,10 @@
           <mxGeometry height="70" width="60" x="175" y="-16" as="geometry" />
         </mxCell>
         <mxCell id="Aw65SN-3_1Ou8Uxu29Dh-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#708090;strokeColor=none;fontColor=#FFFFFF;" value="UMAP" vertex="1">
-          <mxGeometry height="60" width="120" x="258" y="261" as="geometry" />
+          <mxGeometry height="60" width="120" x="28" y="122" as="geometry" />
         </mxCell>
         <mxCell id="Aw65SN-3_1Ou8Uxu29Dh-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontColor=#FFFFFF;strokeColor=none;fillColor=#708090;" value="HDBSCAN" vertex="1">
-          <mxGeometry height="60" width="120" x="258" y="359.5" as="geometry" />
+          <mxGeometry height="60" width="120" x="28" y="235" as="geometry" />
         </mxCell>
         <mxCell id="Aw65SN-3_1Ou8Uxu29Dh-6" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="RawQ" vertex="1">
           <mxGeometry height="70" width="60" x="58" y="-16" as="geometry" />
