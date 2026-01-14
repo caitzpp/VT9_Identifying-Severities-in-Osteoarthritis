@@ -210,6 +210,9 @@
         <mxCell id="qBw7gdfPAS_9ZI_EEnOH-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Preprocessing" vertex="1">
           <mxGeometry height="60" width="120" x="33" y="170" as="geometry" />
         </mxCell>
+        <mxCell id="qBw7gdfPAS_9ZI_EEnOH-17" parent="1" style="text;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;color: rgb(71, 71, 71); font-family: &amp;quot;Google Sans&amp;quot;, Arial, sans-serif; font-size: 16px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;&quot;&gt;Ø&lt;/span&gt;" vertex="1">
+          <mxGeometry height="41" width="40" x="512" y="78" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
