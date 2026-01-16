@@ -1,5 +1,6 @@
 program: src/pipeline/hdbscan_clustering_tuning_sweep.py
 project: Pipeline_UnsupervisedClustering_v2
+notes: To use p need to use metric minkowski
 name: MinimizeMSE
 method: bayes
 metric:
@@ -11,14 +12,12 @@ parameters:
       - leaf
       - eom
     distribution: categorical
+  hdbscan.cluster_selection_epsilon:
+    values: [0.0, 0.01, 0.05, 0.1]
   hdbscan.min_cluster_size:
-    max: 100
-    min: 5
-    distribution: int_uniform
+    values: [5, 10, 15, 20, 30, 50]
   hdbscan.min_samples:
-    max: 50
-    min: 1
-    distribution: int_uniform
+    values: [-1, 5, 10, 15, 30, 50]
   umap.random_state:
     values: [42]
   umap.n_components:
@@ -28,27 +27,26 @@ parameters:
   # hdbscan.leaf_size:
   #   values: [40]
   umap.n_neighbors:
-    max: 248
-    min: 4
-    distribution: int_uniform
+    values: [26]
   hdbscan.metric:
     values:
-      # - cosine
-      - euclidean
-      - manhattan
+      # - euclidean
+      # - manhattan
+      - minkowski
     distribution: categorical
   # umap.min_dist:
   #   max: 0.949
   #   min: 0.0148
   #   distribution: uniform
-  hdbscan.alpha:
-    max: 9.813
-    min: 0.3937
-    distribution: uniform
+  # hdbscan.alpha:
+  #   max: 9.813
+  #   min: 0.3937
+  #   distribution: uniform
   umap.metric:
     values:
       - cosine
       - manhattan
+      - euclidean
     distribution: categorical
   hdbscan.p:
     values: [1, 2]
@@ -63,4 +61,4 @@ parameters:
   gender:
     values: [true]
   smote:
-    values: [true]
+    values: [true, false]

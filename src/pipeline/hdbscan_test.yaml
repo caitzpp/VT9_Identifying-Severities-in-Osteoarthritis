@@ -1,0 +1,77 @@
+method: bayes
+metric:
+  goal: maximize
+  name: f1_score_mri_cart_yn
+name: MinimizeMSE2
+notes: Evaluating some parameters, to include cluster_selection_epsilon.
+parameters:
+  gender:
+    values:
+    - true
+  hdbscan.cluster_selection_epsilon:
+    values:
+    - 0
+    - 0.01
+    - 0.05
+    - 0.1
+  hdbscan.cluster_selection_method:
+    distribution: categorical
+    values:
+    - leaf
+    - eom
+  hdbscan.metric:
+    distribution: categorical
+    values:
+    - euclidean
+    - manhattan
+  hdbscan.min_cluster_size:
+    values:
+    - 5
+    - 10
+    - 15
+    - 20
+    - 30
+    - 50
+  hdbscan.min_samples:
+    values:
+    - -1
+    - 5
+    - 10
+    - 15
+    - 30
+    - 50
+  koos:
+    values:
+    - true
+  oks:
+    values:
+    - true
+  pi:
+    values:
+    - true
+  replace_NanValues:
+    values:
+    - false
+  smote:
+    values:
+    - true
+  umap.metric:
+    distribution: categorical
+    values:
+    - cosine
+    - manhattan
+    - euclidean
+  umap.n_components:
+    values:
+    - 3
+  umap.n_neighbors:
+    values:
+    - 26
+  umap.random_state:
+    values:
+    - 42
+  wUMAP:
+    values:
+    - true
+program: src/pipeline/hdbscan_clustering_tuning_sweep.py
+project: Pipeline_UnsupervisedClustering_v2

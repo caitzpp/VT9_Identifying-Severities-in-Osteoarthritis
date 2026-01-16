@@ -42,7 +42,7 @@ else:
 
 os.makedirs(save_dir, exist_ok=True)
 
-folder = "2025-08-11_data_exploration"
+folder = "2025-09-11_data_exploration"
 df_filename = "inmodi_data_questionnaire_kl_woSC.csv"
 
 smote_type = 'Borderline_SMOTE2'
@@ -130,6 +130,7 @@ if __name__ == "__main__":
         X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts = smote_data_preparation(df=df2, scaler=scaler, 
                                umap_params=umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', 
                                oversample_method=smote_type, save_path=save_dir_temp)
+        df_gen.to_csv(os.path.join(save_dir_temp, f"{filename}_generated_samples.csv"), index=False)
         clusterer = HDBSCAN(**hdbscan_params).fit(X_samp_umap)
         
     else:
