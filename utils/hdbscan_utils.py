@@ -514,6 +514,14 @@ def smote_data_preparation(df, scaler, umap_params, wUMAP, id_col = 'name', y_va
             np.save(embeddings_samp_path, X_samp_umap)
             artifacts['embeddings'] = embeddings_path
             artifacts['embeddings_samp'] = embeddings_samp_path
+
+            #save artifacts as json
+            artifactsname = "smote_oversampled_data_artifacts.json"
+            model_info_savepath = os.path.join(save_path, artifactsname)
+            with open(model_info_savepath, 'w') as f:
+                json.dump(artifacts, f, indent=4)
+
+
     
     return X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts
 
