@@ -1,0 +1,33 @@
+program: src/pipeline/create_umap_scaler.py
+project: UMAP_Scaler
+name: Create using train sample
+method: grid
+parameters:
+  umap.random_state:
+    values: [42]
+  umap.n_components:
+    values: [3]
+  replace_NanValues:
+    values: [false]
+  umap.n_neighbors:
+    values: [5, 20, 40, 80]
+  umap.min_dist:
+    values: [0.05, 0.1, 0.2, 0.8, 0.0125]
+  umap.metric:
+    values:
+      - cosine
+      - manhattan
+      - euclidean
+    distribution: categorical
+  wUMAP:
+    values: [true]
+  koos:
+    values: [true]
+  oks:
+    values: [true]
+  pi:
+    values: [true]
+  gender:
+    values: [true]
+  smote:
+    values: [true]
