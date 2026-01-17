@@ -275,7 +275,7 @@ def handle_modes(x, id_):
     else:
         return float(0.5) 
 
-def get_metrics_external(df, externalcol, chadjusted, label = 'cluster_label'):
+def get_metrics_external(df, externalcol, chadjusted, label = 'cluster_label', test = False):
     results = {}
     
     maj_vote = majority_vote(df, label, externalcol)
@@ -294,6 +294,10 @@ def get_metrics_external(df, externalcol, chadjusted, label = 'cluster_label'):
         y_true = df[col]
         y_pred = df[col_name]
 
+        y_true = y_true.astype(int)
+        y_pred = y_pred.astype(int)
+        # print("Length y_true and y_pred:", len(y_true), len(y_pred))
+
         res = stats.spearmanr(df[label].tolist(), y_true.tolist())
         nmi = normalized_mutual_info_score(df[label], y_true)
         vmeasure = v_measure_score(df[label], y_true)
@@ -305,17 +309,30 @@ def get_metrics_external(df, externalcol, chadjusted, label = 'cluster_label'):
         nmi_mv = normalized_mutual_info_score(y_pred, y_true)
         vmeasure_mv = v_measure_score(y_pred, y_true)
 
-        col_results = {
-            'spearman_clusterlabel' + '_' + str(col): res[0],
-            'nmi_clusterlabel' + '_' + str(col): nmi,
-            'vmeasure_clusterlabel' + '_' + str(col): vmeasure,
-            'spearman_MV' + '_' + str(col): res_mv[0],
-            'nmi_MV' + '_' + str(col): nmi_mv,
-            'vmeasure_MV' + '_' + str(col): vmeasure_mv,
-            'precision' + '_' + str(col): precision,
-            'recall' + '_' + str(col): recall,
-            'f1_score' + '_' + str(col): f1
-        }
+        if test:
+            col_results = {
+                'spearman_clusterlabel_test' + '_' + str(col): res[0],
+                'nmi_clusterlabel_test' + '_' + str(col): nmi,
+                'vmeasure_clusterlabel_test' + '_' + str(col): vmeasure,
+                'spearman_MV_test' + '_' + str(col): res_mv[0],
+                'nmi_MV_test' + '_' + str(col): nmi_mv,
+                'vmeasure_MV_test' + '_' + str(col): vmeasure_mv,
+                'precision_test' + '_' + str(col): precision,
+                'recall_test' + '_' + str(col): recall,
+                'f1_score_test' + '_' + str(col): f1
+            }
+        else:
+            col_results = {
+                'spearman_clusterlabel' + '_' + str(col): res[0],
+                'nmi_clusterlabel' + '_' + str(col): nmi,
+                'vmeasure_clusterlabel' + '_' + str(col): vmeasure,
+                'spearman_MV' + '_' + str(col): res_mv[0],
+                'nmi_MV' + '_' + str(col): nmi_mv,
+                'vmeasure_MV' + '_' + str(col): vmeasure_mv,
+                'precision' + '_' + str(col): precision,
+                'recall' + '_' + str(col): recall,
+                'f1_score' + '_' + str(col): f1
+            }
 
         results.update(col_results)
 

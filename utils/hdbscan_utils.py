@@ -8,6 +8,7 @@ import numpy as np
 import wandb
 from umap import UMAP
 from sklearn.cluster import HDBSCAN
+import hdbscan
 from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score, mean_squared_error
 from scipy.stats import entropy, combine_pvalues
 import scikit_posthocs as sp
@@ -610,7 +611,7 @@ def train_fold(fold, train_idx, test_idx, X, y, df, hdbscan_params, umap_params,
     return base_name, results_df, clusterer, X_train, df_train, X_test, df_test, ch_score
 
 def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, clusterer, score='cluster_label', label='KL-Score', 
-                        use_wandb=True, fold = None, smote=False):
+                        use_wandb=True, fold = None, smote=False, test = False):
     if fold is not None:
         results_df['id'] = results_df['id'].apply(fix_id)
 
@@ -702,19 +703,34 @@ def get_metrics_hdbscan(results_df, kl_df, save_dir_temp, base_name, clusterer, 
         n_entropy = membership_entropy / H_max
 
         if use_wandb:
-            wandb.log({
-                "noise_count": noise_count,
-                "avg_probs": avg_probs.mean(),
-                "entropy": membership_entropy,
-                "normalized_entropy_kl_clusterlabel": n_entropy,
-                "missing_kl_scores": len(df_merged[df_merged[label].isna()]),
-                "spearman_correlation_klscore": spr,
-                "auc_kl": auc,
-                "auc_mid_kl": auc_mid,
-                "auc_mid2_kl": auc_mid2,
-                "auc_sev_kl": auc_sev,
-                "nmi_kl": nmi
-            })
+            if test == False:
+                wandb.log({
+                    "noise_count": noise_count,
+                    "avg_probs": avg_probs.mean(),
+                    "entropy": membership_entropy,
+                    "normalized_entropy_kl_clusterlabel": n_entropy,
+                    "missing_kl_scores": len(df_merged[df_merged[label].isna()]),
+                    "spearman_correlation_klscore": spr,
+                    "auc_kl": auc,
+                    "auc_mid_kl": auc_mid,
+                    "auc_mid2_kl": auc_mid2,
+                    "auc_sev_kl": auc_sev,
+                    "nmi_kl": nmi
+                })
+            if test == True:
+                wandb.log({
+                    "test_noise_count": noise_count,
+                    "test_avg_probs": avg_probs.mean(),
+                    "test_entropy": membership_entropy,
+                    "test_normalized_entropy_kl_clusterlabel": n_entropy,
+                    "test_missing_kl_scores": len(df_merged[df_merged[label].isna()]),
+                    "test_spearman_correlation_klscore": spr,
+                    "test_auc_kl": auc,
+                    "test_auc_mid_kl": auc_mid,
+                    "test_auc_mid2_kl": auc_mid2,
+                    "test_auc_sev_kl": auc_sev,
+                    "test_nmi_kl": nmi
+                })
         return df_merged, df_filtered
 
 def get_metrics_hdbscan_radiographic(results_df, save_dir_temp, base_name, score='cluster_label', label='label', use_wandb=True, fold = None):
@@ -791,7 +807,7 @@ def save_umap_true_plot(X_umap, y, out_path, umap_params, title_suffix=""):
     plt.close()
 
 
-def external_validation(df, externaldf, chadjustd, label = 'cluster_label', external_cols = ['mri_cart_yn', 'mri_osteo_yn'], leftid_col = 'id', rightid_col = 'id', use_wandb = False):
+def external_validation(df, externaldf, chadjustd, label = 'cluster_label', external_cols = ['mri_cart_yn', 'mri_osteo_yn'], leftid_col = 'id', rightid_col = 'id', use_wandb = False, test = False):
     df['id'] = df['id'].apply(fix_id)
 
     #noise_count = (results_df[score]==-1).sum()
@@ -801,7 +817,7 @@ def external_validation(df, externaldf, chadjustd, label = 'cluster_label', exte
     print(f"External validation: {len(df_ev)} out of {len(df_filtered)} clustered points have external labels.")
     df_ev.dropna(subset=external_cols, inplace=True)
 
-    results = get_metrics_external(df = df_ev, chadjusted=chadjustd, externalcol = external_cols, label = label)
+    results = get_metrics_external(df = df_ev, chadjusted=chadjustd, externalcol = external_cols, label = label, test = test)
 
     if use_wandb:
         wandb.log(results)
@@ -817,7 +833,7 @@ def conover_test(df, val_column, group_column):
     comb_pvalues = get_pvalues(conover)[1]
     return conover, comb_pvalues
 
-def external_validation_2(df, combined, val_column, cluster_col = 'cluster_label', use_wandb = False):
+def external_validation_2(df, combined, val_column, cluster_col = 'cluster_label', use_wandb = False, test = False):
     df['id'] = df['id'].apply(fix_id)
     df_filtered = df[df[cluster_col] != -1].copy()
     dfc = combined.merge(df_filtered, on='id', how = 'inner')
@@ -833,10 +849,16 @@ def external_validation_2(df, combined, val_column, cluster_col = 'cluster_label
     mse = mean_squared_error(dfc[val_column], dfc[cluster_col].map(d))
 
     if use_wandb:
-        wandb.log({
-            f"len_dfc": lendfc,
-            f"mse": mse
-        })
+        if test:
+            wandb.log({
+                f"test_len_dfc": lendfc,
+                f"test_mse": mse
+            })
+        elif not test:
+            wandb.log({
+                f"len_dfc": lendfc,
+                f"mse": mse
+            })
     return lendfc, mse
 
 
@@ -934,3 +956,59 @@ def plot_umap_3d(embeddings, labels, title, save_path):
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)
     plt.close()
+
+def get_test_train_lists(base_dir):
+    raw_img_path = os.path.join(base_dir, 'images_knee')
+    folders = ['test', 'train']
+    subfolders = ['0', '1', '2', '3', '4']
+
+    train_img = []
+    test_img = []
+    for subfolder in subfolders:
+        path = os.path.join(raw_img_path, 'train', subfolder)
+        img_names = os.listdir(path)
+        train_img.extend(img_names)
+
+        test_path = os.path.join(raw_img_path, 'test', subfolder)
+        test_img_names = os.listdir(test_path)
+        test_img.extend(test_img_names)
+    train_img = [item.replace('.png', '') for item in train_img]
+    test_img = [item.replace('.png', '') for item in test_img]
+
+    return train_img, test_img
+
+def get_test_embeddings(clusterer, umap, scaler, testl, df2, id_col='name', y_col='KL-Score'):
+        df2_test = df2[df2[id_col].isin(testl)].copy()
+        y_test = df2_test[y_col]
+        ids_test = df2_test[id_col]
+
+        X_test = df2_test.drop(columns=[id_col, y_col]).values
+        X_scaled_test = scaler.transform(X_test)
+        X_umap_test = umap.transform(X_scaled_test)
+
+        y_pred_test, strengths_test = hdbscan.approximate_predict(clusterer, X_umap_test)
+
+        return X_umap_test, df2_test, y_test, ids_test, y_pred_test, strengths_test
+def get_train_test_dfs(df2, clusterer, umap, scaler, umap_path, base_dir, id_col='name', y_col='KL-Score', save_path=None):
+    trainl, testl = get_test_train_lists(base_dir)
+    df2_train = df2[df2['name'].isin(trainl)].copy()
+
+    X_umap_test, df2_test, y_test, ids_test, y_pred_test, strengths_test = get_test_embeddings(clusterer, 
+                                                                                                umap, 
+                                                                                                scaler, 
+                                                                                                testl, 
+                                                                                                df2, 
+                                                                                                id_col=id_col, 
+                                                                                                y_col=y_col
+                                                                                                )
+    if save_path is not None:
+        umap_path = os.path.join(save_path, "X_test_umap_embeddings.npy")
+        np.save(umap_path, X_umap_test)
+    with open(os.path.join(umap_path, 'smote_oversampled_data_artifacts.json'), 'r') as f:
+        umap_model_train_info = json.load(f)
+    ids_train = umap_model_train_info['ids']
+
+    #sort df2_train by ids_train
+    df2_train = df2_train.set_index(id_col).loc[ids_train].reset_index()
+
+    return df2_train, df2_test, ids_train, ids_test, y_test, y_pred_test, strengths_test, X_umap_test
