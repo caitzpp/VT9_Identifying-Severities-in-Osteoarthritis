@@ -2,6 +2,7 @@ import wandb
 import config
 
 import os
+os.environ["WANDB_MODE"] = "disabled"
 import pandas as pd
 import numpy as np
 import joblib
@@ -13,7 +14,7 @@ import hdbscan
 from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score, silhouette_score, davies_bouldin_score
 
 from utils.load_utils import fix_id, get_next_run_folder
-from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold, external_validation, get_hdbscan_umap_defaults, external_validation_2, smote_data_preparation, save_results_SMOTE
+from utils.hdbscan_utils import  save_results, plot_hdbscan,  get_metrics_hdbscan, external_validation, get_hdbscan_umap_defaults, external_validation_2, smote_data_preparation, save_results_SMOTE, get_test_train_lists
 
 import sys
 
@@ -33,7 +34,7 @@ NEPOCH = 400
 
 n = 90
 min_n_clusters = 3
-sil_threshold = 0.3
+sil_threshold = 0.5
 
 if folder is not None:
     save_dir = os.path.join(proc_dir, folder)
@@ -44,6 +45,9 @@ os.makedirs(save_dir, exist_ok=True)
 
 folder = "2025-09-11_data_exploration"
 df_filename = "inmodi_data_questionnaire_kl_woSC.csv"
+
+umap_folder = '2026-01-16_umap_scaler_values'
+# umap_path = os.path.join(proc_dir, umap_folder, 'pipeline')
 
 smote_type = 'Borderline_SMOTE2'
 
@@ -88,7 +92,14 @@ if __name__ == "__main__":
 
     wUMAP = wandb_config.get('wUMAP', True)
     replace_NanValues = wandb_config.get('replace_NanValues', False)
-    smote = wandb_config.get('smote', False)
+    smote = wandb_config.get('smote', True)
+
+    use_aggscore = wandb_config.get('use_aggscore', True)
+
+    if use_aggscore:
+        umap_path = os.path.join(proc_dir, umap_folder, 'comb_modalities')
+    else:
+        umap_path = os.path.join(proc_dir, umap_folder, 'pipeline')
 
     umap_keys, umap_defaults, hdbscan_keys, hdbscan_defaults = get_hdbscan_umap_defaults()
     
@@ -124,24 +135,38 @@ if __name__ == "__main__":
     save_dir_temp = os.path.join(save_dir, save_folder)
     os.makedirs(save_dir_temp, exist_ok=True)
 
-    scaler = StandardScaler()
+    # scaler = StandardScaler()
+
+    # umap_folder = 'nneigh80_mindist0.0125_metricmanhattan'
+    umap_folder = f'nneigh{umap_params["n_neighbors"]}_mindist{umap_params["min_dist"]}_metric{umap_params["metric"]}'
+    umap_path = os.path.join(umap_path, umap_folder)
+
+    #load X_umap
+    X_umap = np.load(os.path.join(umap_path, "X_umap_embeddings.npy"))
+    X_samp_umap = np.load(os.path.join(umap_path, "X_umap_samp_embeddings.npy"))
+
+    scaler = joblib.load(os.path.join(umap_path, "scaler.pkl"))
+    umap = joblib.load(os.path.join(umap_path, "umap_model.pkl"))
+    # print(X_umap.shape)
+    # print(df2.shape) #both (356, n)
+    # sys.exit()
     
     if smote:
-        X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts = smote_data_preparation(df=df2, scaler=scaler, 
-                               umap_params=umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', 
-                               oversample_method=smote_type, save_path=save_dir_temp)
-        df_gen.to_csv(os.path.join(save_dir_temp, f"{filename}_generated_samples.csv"), index=False)
+        # X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts = smote_data_preparation(df=df2, scaler=scaler, 
+        #                        umap_params=umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', 
+        #                        oversample_method=smote_type, save_path=save_dir_temp)
+        # df_gen.to_csv(os.path.join(save_dir_temp, f"{filename}_generated_samples.csv"), index=False)
         clusterer = HDBSCAN(**hdbscan_params).fit(X_samp_umap)
         
     else:
-        X_umap, y, df_scaled, artifacts = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', save_path=save_dir_temp)
+        # X_umap, y, df_scaled, artifacts = prep_data(df2, scaler, umap_params = umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', save_path=save_dir_temp)
         clusterer = HDBSCAN(**hdbscan_params).fit(X_umap)
    
     y_pred, strengths = hdbscan.approximate_predict(clusterer, X_umap)
 
     clusterer_path = os.path.join(save_dir_temp, f"{filename}_clusterer.pkl")
     joblib.dump(clusterer, clusterer_path)
-    artifacts['clusterer'] = clusterer_path
+    # artifacts['clusterer'] = clusterer_path
 
     n_clusters = len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0)
     if n_clusters>1:
@@ -177,10 +202,28 @@ if __name__ == "__main__":
 
     
     if cont_pipeline:
-        base_name, results_df = save_results(df=df_scaled, ypred = y_pred, strengths = strengths,  clusterer=clusterer, params={
+        if use_aggscore:
+            trainl, testl = get_test_train_lists(base_dir)
+            df2_total = df2.copy()
+            df2 = df2[df2['name'].isin(trainl)].copy()
+
+            # load json file with model info
+            with open(os.path.join(umap_path, 'smote_oversampled_data_artifacts.json'), 'r') as f:
+                umap_model_info = f.read()
+            
+            ids_train = umap_model_info['ids'].values()
+            #order df2 by ids_train
+            df2 = df2.set_index('name').loc[ids_train].reset_index()
+
+            print(len(ids_train), len(df2))
+            sys.exit()
+        sys.exit()
+  
+      
+        base_name, results_df = save_results(df=df2, ypred = y_pred, strengths = strengths,  clusterer=clusterer, params={
             'umap': umap_params,
             'hdbscan': hdbscan_params
-        }, scaler=scaler, save_dir=save_dir_temp, artifacts=artifacts, filename=filename, id='name', use_wandb=True,
+        }, scaler=scaler, save_dir=save_dir_temp, artifacts=None, filename=filename, id='name', use_wandb=True,
         smote=smote)
 
         get_metrics_hdbscan(results_df = results_df, kl_df = df, save_dir_temp = save_dir_temp, base_name = base_name, 
@@ -195,6 +238,22 @@ if __name__ == "__main__":
 
         _ = external_validation_2(results_df, combined, val_column = 'mean', cluster_col = 'cluster_label', use_wandb=True)
 
+        if use_aggscore:
+            artifacts_test = {}
+            #load df, use scaler, umap and hdbscan fit predict
+            df_test = df2[~df2['name'].isin(testl)].copy()
+            y_test = df_test['KL-Score']
+            ids_test = df_test['name']
+
+            X_test = df_test.drop(columns=['name', 'KL-Score']).values
+            X_test_scaled = scaler.transform(X_test)
+            X_test_umap = umap.transform(X_test_scaled)
+
+            np.save(os.path.join(save_dir_temp, f"{base_name}_X_test_umap_embeddings.npy"), X_test_umap)
+
+            artifacts_test['ids'] = list(ids_test)
+            with open(os.path.join(save_dir_temp, 'model_info_test.json'), 'w') as f:
+                f.write(artifacts, f, indent=4)
         # Plot the results
         if smote:
             plot_hdbscan(X_umap, y_pred,
