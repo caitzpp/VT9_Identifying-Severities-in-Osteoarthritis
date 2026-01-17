@@ -14,7 +14,7 @@ import hdbscan
 from sklearn.metrics import normalized_mutual_info_score, calinski_harabasz_score, silhouette_score, davies_bouldin_score
 
 from utils.load_utils import fix_id, get_next_run_folder
-from utils.hdbscan_utils import get_unique_filepath, save_results, plot_hdbscan, prep_data, get_metrics_hdbscan, train_fold, external_validation, get_hdbscan_umap_defaults, external_validation_2, smote_data_preparation, save_results_SMOTE
+from utils.hdbscan_utils import  get_hdbscan_umap_defaults, smote_data_preparation, get_test_train_lists
 
 import sys
 
@@ -32,12 +32,15 @@ STAGE = 'ss'
 MOD_PREFIX = "mod_smallimg3"
 NEPOCH = 400
 
-n = 90
-min_n_clusters = 3
-sil_threshold = 0.3
+# n = 90
+# min_n_clusters = 3
+# sil_threshold = 0.3
+use_aggscore = True
 
 if folder is not None:
     save_dir = os.path.join(proc_dir, folder)
+elif use_aggscore:
+    save_dir = os.path.join(proc_dir, f"{today}_umap_scaler_values", 'comb_modalities')
 else:
     save_dir = os.path.join(proc_dir, f"{today}_umap_scaler_values", 'pipeline')
 
@@ -113,6 +116,12 @@ if __name__ == "__main__":
         df2['is_male'] = df['gender'].apply(lambda x: 1 if x=='male' else 0)
         df2 = df2.drop(columns= 'gender')
 
+    if use_aggscore:
+        agg_df = pd.read_csv(df_aggscore_path)
+        agg_df['name'] = agg_df['id'].str.split('/').str[-1].str.replace('.png', '', regex=False)
+        df2 = df2.merge(agg_df[['name', 'mean']], on='name', how='left')
+        trainl, testl = get_test_train_lists(base_dir)
+
     save_folder = f'nneigh{umap_params["n_neighbors"]}_mindist{umap_params["min_dist"]}_metric{umap_params["metric"]}'
 
     save_dir_temp = os.path.join(save_dir, save_folder)
@@ -121,9 +130,16 @@ if __name__ == "__main__":
     scaler = StandardScaler()
     
     if smote:
-        X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts = smote_data_preparation(df=df2, scaler=scaler, 
+        if use_aggscore:
+            df2_train = df2[df2['name'].isin(trainl)].copy()
+            X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts = smote_data_preparation(df=df2_train, scaler=scaler, 
                                umap_params=umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', 
                                oversample_method=smote_type, save_path=save_dir_temp)
-        df_gen.to_csv(os.path.join(save_dir_temp, f"SMOTE_generated_samples.csv"), index=False)
+            df_gen.to_csv(os.path.join(save_dir_temp, f"SMOTE_generated_samples.csv"), index=False)
+        else:
+            X_umap, y, df_scaled, X_samp_umap, y_samp, df_gen, artifacts = smote_data_preparation(df=df2, scaler=scaler, 
+                                umap_params=umap_params, wUMAP=wUMAP, id_col='name', y_value='KL-Score', 
+                                oversample_method=smote_type, save_path=save_dir_temp)
+            df_gen.to_csv(os.path.join(save_dir_temp, f"SMOTE_generated_samples.csv"), index=False)
        
 

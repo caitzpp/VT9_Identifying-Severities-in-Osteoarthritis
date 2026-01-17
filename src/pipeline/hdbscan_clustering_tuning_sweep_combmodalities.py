@@ -2,7 +2,7 @@ import wandb
 import config
 
 import os
-os.environ["WANDB_MODE"] = "disabled"
+# os.environ["WANDB_MODE"] = "disabled"
 import pandas as pd
 import numpy as np
 import json
@@ -40,7 +40,7 @@ sil_threshold = 0
 if folder is not None:
     save_dir = os.path.join(proc_dir, folder)
 else:
-    save_dir = os.path.join(proc_dir, f"{today}_hdbscan", 'pipeline')
+    save_dir = os.path.join(proc_dir, f"{today}_hdbscan", 'comb_modalities')
 
 os.makedirs(save_dir, exist_ok=True)
 
@@ -127,11 +127,15 @@ if __name__ == "__main__":
     save_folder = run_folder_name
     filename = f"{run.name}_umap_hdbscan_scaled"
 
+    agg_df = pd.read_csv(df_aggscore_path)
+    agg_df['name'] = agg_df['id'].str.split('/').str[-1].str.replace('.png', '', regex=False)
+    df2 = df2.merge(agg_df[['name', 'mean']], on='name', how='left')
+
     save_dir_temp = os.path.join(save_dir, save_folder)
     os.makedirs(save_dir_temp, exist_ok=True)
      
-    umap_folder = f'nneigh5_mindist{umap_params["min_dist"]}_metric{umap_params["metric"]}'
-    # umap_folder = f'nneigh{umap_params["n_neighbors"]}_mindist{umap_params["min_dist"]}_metric{umap_params["metric"]}'
+    # umap_folder = f'nneigh5_mindist{umap_params["min_dist"]}_metric{umap_params["metric"]}'
+    umap_folder = f'nneigh{umap_params["n_neighbors"]}_mindist{umap_params["min_dist"]}_metric{umap_params["metric"]}'
     umap_path = os.path.join(umap_path, umap_folder)
 
     #load X_umap
@@ -226,19 +230,24 @@ if __name__ == "__main__":
         _ = external_validation_2(results_df_test, combined, val_column='mean', 
                                   cluster_col = 'cluster_label', 
                                   use_wandb = True, test=True)
-        
+        n_clusters = len(set(clusterer.labels_)) - (1 if -1 in clusterer.labels_ else 0)
         if smote: 
             plot_hdbscan(X_umap_train, y_pred_train, 
-                         save_path = os.path.join(save_dir_temp, f"{base_name}_plot_train.png"))
+                         save_path = os.path.join(save_dir_temp, f"{base_name}_plot_train.png"),
+                         n_clusters=n_clusters)
             plot_hdbscan(X_umap_test, y_pred_test, 
-                         save_path = os.path.join(save_dir_temp, f"{base_name}_plot_test.png"))
+                         save_path = os.path.join(save_dir_temp, f"{base_name}_plot_test.png"),
+                         n_clusters=n_clusters)
             plot_hdbscan(X_samp_umap_train, clusterer.labels_, 
-                            save_path = os.path.join(save_dir_temp, f"{base_name}_plot_smotedata.png"))
+                            save_path = os.path.join(save_dir_temp, f"{base_name}_plot_smotedata.png"),
+                            n_clusters=n_clusters)
         else:
             plot_hdbscan(X_umap_train, y_pred_train, 
-                         save_path = os.path.join(save_dir_temp, f"{base_name}_plot_train.png"))
+                         save_path = os.path.join(save_dir_temp, f"{base_name}_plot_train.png"),
+                         n_clusters=n_clusters)
             plot_hdbscan(X_umap_test, y_pred_test, 
-                         save_path = os.path.join(save_dir_temp, f"{base_name}_plot_test.png"))
+                         save_path = os.path.join(save_dir_temp, f"{base_name}_plot_test.png"),
+                         n_clusters=n_clusters)
             
         wandb.log(
                 {'calinski_harabasz_score': np.round(ch_score, 3),

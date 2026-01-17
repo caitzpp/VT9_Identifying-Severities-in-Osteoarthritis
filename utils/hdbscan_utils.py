@@ -177,6 +177,7 @@ def plot_hdbscan(
     size_min=8,
     size_max=80,
     use_first_three_dims=True,
+    n_clusters = None
 ):
     """
     Auto-plots 2D or 3D depending on X shape. If X has >=3 features, uses 3D.
@@ -257,7 +258,10 @@ def plot_hdbscan(
             handles.append(h); labels_for_legend.append(f"Cluster {k}")
 
     # title
-    n_clusters_ = len(non_noise)
+    if n_clusters is None:
+        n_clusters_ = len(non_noise)
+    else:
+        n_clusters_ = n_clusters
     pre = "True" if ground_truth else "Estimated"
     title = f"{pre} number of clusters: {n_clusters_}"
     if parameters is not None and isinstance(parameters, dict) and len(parameters):
@@ -983,6 +987,8 @@ def get_test_embeddings(clusterer, umap, scaler, testl, df2, id_col='name', y_co
         ids_test = df2_test[id_col]
 
         X_test = df2_test.drop(columns=[id_col, y_col]).values
+        print(X_test.columns)
+        print(scaler.feaature_names_in)
         X_scaled_test = scaler.transform(X_test)
         X_umap_test = umap.transform(X_scaled_test)
 
@@ -1002,8 +1008,7 @@ def get_train_test_dfs(df2, clusterer, umap, scaler, umap_path, base_dir, id_col
                                                                                                 y_col=y_col
                                                                                                 )
     if save_path is not None:
-        umap_path = os.path.join(save_path, "X_test_umap_embeddings.npy")
-        np.save(umap_path, X_umap_test)
+        np.save(os.path.join(save_path, "X_test_umap_embeddings.npy"), X_umap_test)
     with open(os.path.join(umap_path, 'smote_oversampled_data_artifacts.json'), 'r') as f:
         umap_model_train_info = json.load(f)
     ids_train = umap_model_train_info['ids']
