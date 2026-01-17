@@ -987,8 +987,6 @@ def get_test_embeddings(clusterer, umap, scaler, testl, df2, id_col='name', y_co
         ids_test = df2_test[id_col]
 
         X_test = df2_test.drop(columns=[id_col, y_col]).values
-        print(X_test.columns)
-        print(scaler.feaature_names_in)
         X_scaled_test = scaler.transform(X_test)
         X_umap_test = umap.transform(X_scaled_test)
 
