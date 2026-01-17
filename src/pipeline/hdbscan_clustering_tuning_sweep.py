@@ -2,9 +2,10 @@ import wandb
 import config
 
 import os
-os.environ["WANDB_MODE"] = "disabled"
+# os.environ["WANDB_MODE"] = "disabled"
 import pandas as pd
 import numpy as np
+import json
 import joblib
 import datetime
 from sklearn.preprocessing import StandardScaler
@@ -94,12 +95,9 @@ if __name__ == "__main__":
     replace_NanValues = wandb_config.get('replace_NanValues', False)
     smote = wandb_config.get('smote', True)
 
-    use_aggscore = wandb_config.get('use_aggscore', True)
+    use_aggscore = wandb_config.get('use_aggscore', False)
 
-    if use_aggscore:
-        umap_path = os.path.join(proc_dir, umap_folder, 'comb_modalities')
-    else:
-        umap_path = os.path.join(proc_dir, umap_folder, 'pipeline')
+    umap_path = os.path.join(proc_dir, umap_folder, 'pipeline')
 
     umap_keys, umap_defaults, hdbscan_keys, hdbscan_defaults = get_hdbscan_umap_defaults()
     
@@ -137,7 +135,7 @@ if __name__ == "__main__":
 
     # scaler = StandardScaler()
 
-    # umap_folder = 'nneigh80_mindist0.0125_metricmanhattan'
+    # umap_folder = f'nneigh5_mindist{umap_params["min_dist"]}_metric{umap_params["metric"]}'
     umap_folder = f'nneigh{umap_params["n_neighbors"]}_mindist{umap_params["min_dist"]}_metric{umap_params["metric"]}'
     umap_path = os.path.join(umap_path, umap_folder)
 
@@ -202,31 +200,14 @@ if __name__ == "__main__":
 
     
     if cont_pipeline:
-        if use_aggscore:
-            trainl, testl = get_test_train_lists(base_dir)
-            df2_total = df2.copy()
-            df2 = df2[df2['name'].isin(trainl)].copy()
-
-            # load json file with model info
-            with open(os.path.join(umap_path, 'smote_oversampled_data_artifacts.json'), 'r') as f:
-                umap_model_info = f.read()
-            
-            ids_train = umap_model_info['ids'].values()
-            #order df2 by ids_train
-            df2 = df2.set_index('name').loc[ids_train].reset_index()
-
-            print(len(ids_train), len(df2))
-            sys.exit()
-        sys.exit()
-  
-      
         base_name, results_df = save_results(df=df2, ypred = y_pred, strengths = strengths,  clusterer=clusterer, params={
             'umap': umap_params,
             'hdbscan': hdbscan_params
         }, scaler=scaler, save_dir=save_dir_temp, artifacts=None, filename=filename, id='name', use_wandb=True,
         smote=smote)
 
-        get_metrics_hdbscan(results_df = results_df, kl_df = df, save_dir_temp = save_dir_temp, base_name = base_name, 
+        get_metrics_hdbscan(results_df = results_df, kl_df = df, 
+                            save_dir_temp = save_dir_temp, base_name = base_name, 
                             clusterer = clusterer, score = 'cluster_label', label = 'KL-Score', 
                             use_wandb = True, smote = smote)
         
@@ -238,22 +219,6 @@ if __name__ == "__main__":
 
         _ = external_validation_2(results_df, combined, val_column = 'mean', cluster_col = 'cluster_label', use_wandb=True)
 
-        if use_aggscore:
-            artifacts_test = {}
-            #load df, use scaler, umap and hdbscan fit predict
-            df_test = df2[~df2['name'].isin(testl)].copy()
-            y_test = df_test['KL-Score']
-            ids_test = df_test['name']
-
-            X_test = df_test.drop(columns=['name', 'KL-Score']).values
-            X_test_scaled = scaler.transform(X_test)
-            X_test_umap = umap.transform(X_test_scaled)
-
-            np.save(os.path.join(save_dir_temp, f"{base_name}_X_test_umap_embeddings.npy"), X_test_umap)
-
-            artifacts_test['ids'] = list(ids_test)
-            with open(os.path.join(save_dir_temp, 'model_info_test.json'), 'w') as f:
-                f.write(artifacts, f, indent=4)
         # Plot the results
         if smote:
             plot_hdbscan(X_umap, y_pred,
