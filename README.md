@@ -22,8 +22,14 @@ The goal of this work is to explore whether **data-driven severity groupings** c
 ---
 
 ## Pipeline Overview
+[Pipeline diagram](docs/OA Clustering Pipeline.png)
 
 The pipeline consists of multiple stages, including:
+* Questionnaire Data Preparation
+* Anomaly Score Generation
+* Unsupervised Clustering
+* Severity based Clustering Ordering
+* Evaluation
 
 ---
 
@@ -126,5 +132,4 @@ Original implementation repurposed and adapted for this project.
 
 **UnsupervisedClustering_OA_Webapp**
 [Link](https://github.com/caitzpp/UnsupervisedClustering_OA_Webapp)
-(add link here)
 Web application developed to visualize embeddings and collect expert feedback on cluster assignments.
