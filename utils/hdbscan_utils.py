@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import smote_variants as sv
 import joblib
 import numpy as np
+import seaborn as sns
 import wandb
 from umap import UMAP
 from sklearn.cluster import HDBSCAN
@@ -220,15 +221,25 @@ def plot_hdbscan(
 
     unique_labels = np.unique(labels)
     # color map per cluster (exclude noise for color count)
-    n_colors = len(unique_labels) - (1 if -1 in unique_labels else 0)
-    # fall back to at least 1 color to avoid linspace errors
-    n_colors = max(n_colors, 1)
-    color_list = [plt.cm.Spectral(t) for t in np.linspace(0, 1, n_colors)]
+    # n_colors = len(unique_labels) - (1 if -1 in unique_labels else 0)
+    # # fall back to at least 1 color to avoid linspace errors
+    # n_colors = max(n_colors, 1)
+    # color_list = [plt.cm.Spectral(t) for t in np.linspace(0, 1, n_colors)]
 
-    # build a deterministic color map for non-noise clusters
+    # # build a deterministic color map for non-noise clusters
+    # non_noise = [lab for lab in unique_labels if lab != -1]
+    # color_map = {lab: color_list[i % len(color_list)] for i, lab in enumerate(sorted(non_noise))}
     non_noise = [lab for lab in unique_labels if lab != -1]
-    color_map = {lab: color_list[i % len(color_list)] for i, lab in enumerate(sorted(non_noise))}
+    n_colors = max(len(non_noise), 1)
 
+    # seaborn Set2 palette
+    color_list = sns.color_palette("Set2", n_colors=n_colors)
+
+    # deterministic mapping: cluster label -> color
+    color_map = {
+        lab: color_list[i % len(color_list)]
+        for i, lab in enumerate(sorted(non_noise))
+}
     # plot each cluster once (vectorized scatter)
     handles = []
     labels_for_legend = []
@@ -257,6 +268,155 @@ def plot_hdbscan(
                                marker='o', c=[col], s=sizes[mask], edgecolors='k', linewidths=0.2, alpha=0.9)
             handles.append(h); labels_for_legend.append(f"Cluster {k}")
 
+    # title
+    if n_clusters is None:
+        n_clusters_ = len(non_noise)
+    else:
+        n_clusters_ = n_clusters
+    pre = "True" if ground_truth else "Estimated"
+    title = f"{pre} number of clusters: {n_clusters_}"
+    if parameters is not None and isinstance(parameters, dict) and len(parameters):
+        param_str = ", ".join(f"{k}={v}" for k, v in parameters.items())
+        title += f" | {param_str}"
+    ax.set_title(title)
+
+    # axes labels
+    if is_3d:
+        ax.set_xlabel("dim 0"); ax.set_ylabel("dim 1"); ax.set_zlabel("dim 2")
+        # a gentle view angle
+        ax.view_init(elev=18, azim=35)
+    else:
+        ax.set_xlabel("dim 0"); ax.set_ylabel("dim 1")
+
+    # legend (avoid too many items)
+    if len(handles) <= 20:
+        ax.legend(handles, labels_for_legend, title="Cluster Labels", fontsize='small', loc="best")
+
+    plt.tight_layout()
+    if save_path is not None:
+        plt.savefig(save_path, bbox_inches='tight', dpi=150)
+    # return ax so caller can further tweak
+    #return ax
+
+def plot_hdbscan_wcentroid(
+    X,
+    labels,
+    centroids_dict,
+    probabilities=None,
+    parameters=None,
+    ground_truth=False,
+    ax=None,
+    save_path=None,
+    size_min=8,
+    size_max=80,
+    use_first_three_dims=True,
+    n_clusters = None
+):
+    """
+    Auto-plots 2D or 3D depending on X shape. If X has >=3 features, uses 3D.
+    - sizes scale with `probabilities` (in [0,1]); noise gets fixed small size.
+    - noise label is -1 (black X markers).
+    """
+    X = np.asarray(X)
+    labels = np.asarray(labels)
+    n, d = X.shape
+
+    centroid_points = np.vstack([
+        v['centroid'] for v in centroids_dict.values()
+    ])
+
+    # choose 2D vs 3D
+    is_3d = d >= 3
+    if is_3d and use_first_three_dims:
+        Xp = X[:, :3]
+    else:
+        if d < 2:
+            raise ValueError("X must have at least 2 features to plot.")
+        Xp = X[:, :2]
+
+    # probabilities -> sizes
+    if probabilities is None:
+        probabilities = np.ones(n, dtype=float)
+    else:
+        probabilities = np.asarray(probabilities, dtype=float)
+        # make sure it's in a sane range
+        pmin, pmax = probabilities.min(), probabilities.max()
+        if pmax > 1.0 or pmin < 0.0:
+            # normalize to 0..1 if needed
+            probabilities = (probabilities - pmin) / (pmax - pmin + 1e-12)
+
+    sizes = size_min + (size_max - size_min) * probabilities
+
+    # figure / axes
+    if ax is None:
+        fig = plt.figure(figsize=(9, 5))
+        if is_3d:
+            ax = fig.add_subplot(111, projection='3d')
+        else:
+            ax = fig.add_subplot(111)
+
+    unique_labels = np.unique(labels)
+    # color map per cluster (exclude noise for color count)
+    # n_colors = len(unique_labels) - (1 if -1 in unique_labels else 0)
+    # # fall back to at least 1 color to avoid linspace errors
+    # n_colors = max(n_colors, 1)
+    # color_list = [plt.cm.Spectral(t) for t in np.linspace(0, 1, n_colors)]
+
+    # # build a deterministic color map for non-noise clusters
+    # non_noise = [lab for lab in unique_labels if lab != -1]
+    # color_map = {lab: color_list[i % len(color_list)] for i, lab in enumerate(sorted(non_noise))}
+    non_noise = [lab for lab in unique_labels if lab != -1]
+    n_colors = max(len(non_noise), 1)
+
+    # seaborn Set2 palette
+    color_list = sns.color_palette("Set2", n_colors=n_colors)
+
+    # deterministic mapping: cluster label -> color
+    color_map = {
+        lab: color_list[i % len(color_list)]
+        for i, lab in enumerate(sorted(non_noise))
+}
+    # plot each cluster once (vectorized scatter)
+    handles = []
+    labels_for_legend = []
+
+    for k in sorted(unique_labels, key=lambda x: (x == -1, x)):
+        mask = labels == k
+        if not np.any(mask):
+            continue
+
+        if k == -1:
+            # noise: black 'x', fixed size
+            if is_3d:
+                h = ax.scatter(Xp[mask, 0], Xp[mask, 1], Xp[mask, 2],
+                               marker='x', c='k', s=size_min, linewidths=0.8, alpha=0.9, zorder = 1)
+            else:
+                h = ax.scatter(Xp[mask, 0], Xp[mask, 1],
+                               marker='x', c='k', s=size_min, linewidths=0.8, alpha=0.9, zorder = 1)
+            handles.append(h); labels_for_legend.append("Noise")
+        else:
+            col = color_map[k]
+            if is_3d:
+                h = ax.scatter(Xp[mask, 0], Xp[mask, 1], Xp[mask, 2],
+                               marker='o', c=[col], s=sizes[mask], edgecolors='k', linewidths=0.2, alpha=0.6, zorder = 1)
+            else:
+                h = ax.scatter(Xp[mask, 0], Xp[mask, 1],
+                               marker='o', c=[col], s=sizes[mask], edgecolors='k', linewidths=0.2, alpha=0.6, zorder = 1)
+            handles.append(h); labels_for_legend.append(f"Cluster {k}")
+    h = ax.scatter(
+        centroid_points[:, 0],
+        centroid_points[:, 1],
+        centroid_points[:, 2] if is_3d else None,
+        marker='X',
+        c='red',
+        s=100,
+        edgecolors='k',
+        zorder = 10,
+        linewidths=1.5,
+        alpha=0.9
+    )
+    handles.append(h)
+    labels_for_legend.append("Centroids")
     # title
     if n_clusters is None:
         n_clusters_ = len(non_noise)

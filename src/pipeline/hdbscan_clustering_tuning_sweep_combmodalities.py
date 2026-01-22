@@ -33,9 +33,9 @@ STAGE = 'ss'
 MOD_PREFIX = "mod_smallimg3"
 NEPOCH = 400
 
-n = 90
+n = 50
 min_n_clusters = 3
-sil_threshold = 0
+sil_threshold = 0.5
 
 if folder is not None:
     save_dir = os.path.join(proc_dir, folder)

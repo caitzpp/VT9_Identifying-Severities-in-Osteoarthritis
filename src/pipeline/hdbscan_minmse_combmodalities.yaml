@@ -48,7 +48,7 @@ parameters:
   #   distribution: uniform
   umap.metric:
     values:
-      # - cosine
+      - cosine
       - manhattan
       - euclidean
     distribution: categorical
