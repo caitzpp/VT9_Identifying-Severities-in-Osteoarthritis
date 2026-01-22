@@ -22,7 +22,7 @@ The goal of this work is to explore whether **data-driven severity groupings** c
 ---
 
 ## Pipeline Overview
-[Pipeline diagram](docs/OAClusteringPipeline.png)
+![Pipeline diagram](docs/OAClusteringPipeline.png)
 
 The pipeline consists of multiple stages, including:
 * Questionnaire Data Preparation
