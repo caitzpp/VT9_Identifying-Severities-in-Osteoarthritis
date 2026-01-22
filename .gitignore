@@ -9,6 +9,8 @@ condaenv.zf49i15p.requirements.txt
 
 data/
 outputs/
+output/
+
 
 # C extensions
 *.so
